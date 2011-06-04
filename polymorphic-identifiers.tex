@@ -1,0 +1,180 @@
+%-----------------------------------------------------------------------------
+%
+%    Domain Specific Identifiers
+%
+%-----------------------------------------------------------------------------
+
+
+\documentclass[preprint,authoryear,10pt]{sigplanconf}
+
+
+\usepackage{amsmath}
+\usepackage{epigraph}
+\usepackage[colorlinks=true,
+        linkcolor=black,
+        citecolor=black,
+        filecolor=black,
+        pagecolor=black,
+        urlcolor=black,
+        bookmarks=true,
+        bookmarksopen=true,
+        bookmarksopenlevel=3,
+        plainpages=false,
+        pdfpagelabels=true]{hyperref}
+
+\begin{document}
+
+%\conferenceinfo{WXYZ '05}{date, City.} 
+%\copyrightyear{2011} 
+%\copyrightdata{[to be supplied]} 
+
+%\titlebanner{banner above paper title}        % These are ignored unless
+%\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{Polymorphics Identifiers}
+%\subtitle{Subtitle Text, if any}
+
+\authorinfo{Marcel Weiher}
+           {metaobject ltd.}
+           {marcel@metaobject.com}
+\authorinfo{Robert Hirschfled}
+           {Hasso Plattner Institut}
+           {hirschfeld@acm.org}
+
+\maketitle
+
+\begin{abstract}
+We introduce polymorphic identifiers, a generalization of the monomorphic identifiers found in most
+programming languages today as first class objects, as well as mechanisms for
+resolving those identifiers and binding them into a general purpose programming language.
+These identifiers allow stratified designs clearly separating meta- and base-level constructs
+as well as light-weight domain-specificity with high levels of expressiveness, 
+\end{abstract}
+
+\category{CR-number}{subcategory}{third-level}
+
+\terms 
+\keywords
+\setlength{\epigraphrule}{0pt}
+
+
+\section{Introduction}
+\epigraph{There are only two hard things in Computer Science:  cache invalidation and naming things} {Phil Karlton}
+
+This is not a paper about cache invalidation.  Mostly.   Rather, we report on an experimental
+technique for expanding our ability to directly name many different things in 
+programming languages using a common and extensible identifier and identifier resolution
+mechanisms.
+These polymorphic identifiers are not just user-extensible,
+but can also be manipulated in the programming language, making them first class 
+entities.
+
+Our starting point is a programming model such as that of Smalltalk, where we have objects
+that communicate via messages\cite{Goldberg1983}.   Identifiers are used to identify 
+objects, but are early bound by the compiler and resolved to slots in local contexts, and 
+global, instance-, class- or pool-variables.  Late-binding of names, encapsulation and
+polymorphic behavior can only be achieved with message sends.
+
+We then give various examples both of additional things that one might want to reference 
+ apart from objects resident in a single address space  and
+desirable operations on identifiers beyond resolving them to objects at compile time.
+
+We believe that the accidental complexity \cite{Brooks87nosilver} introduced by the
+plethora of ad-hoc mechanisms for addressing these desiderata can be reduced 
+by unifying them using the polymorphic identifiers introduced in this paper.
+
+
+\section{Monomorphic Identifiers}
+
+
+
+
+
+\begin{itemize}
+\item Blue Book talks about objects and messages.   Ignores that there are identifiers, because
+	they can be largely ignored, {\em identifier-oblivious programming}.
+\item Describe very briefly how identifiers work in Smalltalk, 
+\end{itemize}
+
+
+\section{The Trouble with Strings}
+\epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
+
+\begin{itemize}
+
+\item 
+
+\end{itemize}
+
+\section{Compile time}
+\epigraph{Trying to outsmart a compiler defeats much of the purpose of using one.}{Kernighan and Plauger, The Elements of Programming Style.}
+
+
+
+
+Existing mechanisms for variable access via built-in identifiers not adequate in 
+all domains, for example:
+ \begin{itemize}
+
+\item path-based access to various in-memory data structures (e.g. DOMs)
+\item GUIs, serialization and notification mechanisms require treating a variable
+	reference as a parameter.
+\item external resources such as files and the web
+
+\end{itemize}
+
+Although these problems seem to be different from each other, we argue that they
+have the same underlying cause:   lack of a first class identifiers.  
+
+Coping mechanisms:  
+\begin{itemize}
+\item access to 'things' via messages rather than directly via identifiers.  
+\item identifiers encoded as strings in the programming language
+\item introduction of separate objects that act like identifiers
+\item use of DSLs
+\end{itemize}
+
+
+\section{User API for identifiers}
+
+\section{Syntax}
+
+\section{Multiple Representations}
+
+\section{Defining Schemes}
+
+
+\section{Related Work}
+
+\subsection{LISP Quoting}
+
+LISP quoting allows references to not be evaluated, but the returned value is just a symbol.
+
+\subsection{E}
+
+The E language adds URL for far references and some stuff
+
+\subsection{Properties}
+
+Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
+message sending.
+
+
+\appendix
+\section{Appendix A}
+
+This is the text of the appendix, if you need one.
+
+\acks
+
+Acknowledgments, if needed.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+
+% The bibliography should be embedded for final submission.
+\bibliography{polymorphic-identifiers}
+
+
+\end{document}
