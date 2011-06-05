@@ -84,31 +84,103 @@ plethora of ad-hoc mechanisms for addressing these desiderata can be reduced
 by unifying them using the polymorphic identifiers introduced in this paper.
 
 
-\section{Monomorphic Identifiers}
+\section{Identifiers}
 
 
+Identifiers are text strings that serve as human-readable names for entities/objects
+in a program.  They are converted to actual references, usually with a mixture of
+compile-time and run-time lookups.  For example, to obtain the value of the local
+variable named {\bf anObject}, one would have to search the local context for
+a slot named {\bf 'anObject'} and then return the value stored at that slot.
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+(localContext variableNamed:'’anObject’') value.
+\end{verbatim}
+\caption{Lookup of a local variable}
+\label{hi1}
+\end{center}
+\end{figure}
+
+
+Some  languages actually perform all these steps at runtime, but most 
+have a compiler help with efficiency by converting the names to indexes into
+the local context and the value lookup into a simple load from memory.
+
+Most programming languages don't just optimize the interface to the identifier
+lookup operation, but also the interface.  Instead of having to specify how to
+look up the identifier in the local context, the programmer can just write the
+identifier {\bf anObject}, which the programming language will treat as equivalent to the
+value that will be obtained by looking up the name in the local context.  
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+	anObject.
+\end{verbatim}
+\caption{Identifer-oblivious variable lookup}
+\label{bozo}
+\end{center}
+\end{figure}
+
+This  {\em identifier-oblivious} style, where lookup of the value bound to and
+identifier is implied, is so familiar that we don't usually think about it.  The 
+alternative {\em identifier-aware} style shown in Figure~\ref{hi1} would get cumbersome quickly!
 
 
 
 \begin{itemize}
-\item Blue Book talks about objects and messages.   Ignores that there are identifiers, because
-	they can be largely ignored, {\em identifier-oblivious programming}.
-\item Describe very briefly how identifiers work in Smalltalk, 
+\item Early bound
+\item Polymorphism only via messaging, interface/API only via messaging, this mixes 
+	interface with implementation and 
+\item 
 \end{itemize}
 
 
-\section{The Trouble with Strings}
+\subsection{Interface vs. Implementation}
+
+Smalltalk:  have to use messaging for interface/polymorphism.
+
+\subsection{External Resources}
+
+Files/Paths, URLs, Distributed Objects, messaging hiding behind identifier access
+
+\subsection{Complex Identifiers}
+
+\subsection{Manipulating Identifiers}
+
+
+\subsection{Identifier Awareness}
+
+
+
+\subsection{The Trouble with Strings}
+
 \epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
 
+
+\epigraph{Trying to outsmart a compiler defeats much of the purpose of using one.}{Kernighan and Plauger, The Elements of Programming Style.}
+
+
+
 \begin{itemize}
 
-\item 
+\item Processing the representation, details obscure intent
+\item Mixing data and identifiers
+\item Internationalization makes things (much) worse
+\item Security, quoting, (SQL)-injection attacks
 
 \end{itemize}
 
-\section{Compile time}
-\epigraph{Trying to outsmart a compiler defeats much of the purpose of using one.}{Kernighan and Plauger, The Elements of Programming Style.}
+\section{Polymorphic Identifiers}
 
+
+\section{Examples}
+
+\section{Implementation}
 
 
 
@@ -135,15 +207,6 @@ Coping mechanisms:
 \end{itemize}
 
 
-\section{User API for identifiers}
-
-\section{Syntax}
-
-\section{Multiple Representations}
-
-\section{Defining Schemes}
-
-
 \section{Related Work}
 
 \subsection{LISP Quoting}
@@ -154,10 +217,29 @@ LISP quoting allows references to not be evaluated, but the returned value is ju
 
 The E language adds URL for far references and some stuff
 
+\subsection{ThingLab}
+
+Paths in ThingLab were necessary in order to specify subparts of objects and allow them
+to be referenced.
+
+\subsection{. references}
+
+
+
 \subsection{Properties}
 
 Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
-message sending.
+message sending, thus allowing path-based access 
+
+\subsection{Icon}
+
+In the Icon programming language, identifiers (references) can be first class values,
+and there are complex rules for when a reference remains a reference and when
+it's value is used.
+
+
+\section{Summary and Outlook}
+
 
 
 \appendix
