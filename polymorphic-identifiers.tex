@@ -31,7 +31,7 @@
 %\titlebanner{banner above paper title}        % These are ignored unless
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
-\title{Polymorphics Identifiers}
+\title{Polymorphic Identifiers}
 %\subtitle{Subtitle Text, if any}
 
 \authorinfo{Marcel Weiher}
@@ -64,7 +64,7 @@ as well as light-weight domain-specificity with high levels of expressiveness,
 This is not a paper about cache invalidation.  Mostly.   Rather, we report on an experimental
 technique for expanding our ability to directly name many different things in 
 programming languages using a common and extensible identifier and identifier resolution
-mechanisms.
+mechanism.
 These polymorphic identifiers are not just user-extensible,
 but can also be manipulated in the programming language, making them first class 
 entities.
@@ -85,9 +85,10 @@ by unifying them using the polymorphic identifiers introduced in this paper.
 
 
 \section{Identifiers}
+\label{identifiers}
+\epigraph{When programming a component, the right computation model for the component is the least expressive model that results in a natural program.}{Rule of Least Expressiveness.}
 
-
-Identifiers are text strings that serve as human-readable names for entities/objects
+Identifiers are symbols that serve as human-readable names for entities/objects
 in a program.  They are converted to actual references, usually with a mixture of
 compile-time and run-time lookups.  For example, to obtain the value of the local
 variable named {\bf anObject}, one would have to search the local context for
@@ -100,7 +101,7 @@ a slot named {\bf 'anObject'} and then return the value stored at that slot.
 (localContext variableNamed:'ÕanObjectÕ') value.
 \end{verbatim}
 \caption{Lookup of a local variable}
-\label{hi1}
+\label{variable-lookup}
 \end{center}
 \end{figure}
 
@@ -109,7 +110,7 @@ Some  languages actually perform all these steps at runtime, but most
 have a compiler help with efficiency by converting the names to indexes into
 the local context and the value lookup into a simple load from memory.
 
-Most programming languages don't just optimize the interface to the identifier
+Most programming languages don't just optimize the implementation of the identifier
 lookup operation, but also the interface.  Instead of having to specify how to
 look up the identifier in the local context, the programmer can just write the
 identifier {\bf anObject}, which the programming language will treat as equivalent to the
@@ -122,38 +123,186 @@ value that will be obtained by looking up the name in the local context.
 	anObject.
 \end{verbatim}
 \caption{Identifer-oblivious variable lookup}
-\label{bozo}
+\label{plain-identifier}
 \end{center}
 \end{figure}
 
-This  {\em identifier-oblivious} style, where lookup of the value bound to and
-identifier is implied, is so familiar that we don't usually think about it.  The 
-alternative {\em identifier-aware} style shown in Figure~\ref{hi1} would get cumbersome quickly!
+This  {\em identifier-oblivious} style shown in Figure~\ref{plain-identifier}, where lookup of the value bound to and
+identifier is implied, is so familiar that we don't usually think about it, we just
+refer to object using the identifier.
+  The 
+alternative {\em identifier-aware} style shown in Figure~\ref{variable-lookup} would get cumbersome quickly.
+
+Non-local entities such as sub-parts of constructed objects 
+cannot be referred to symbolically by a single identifier.
+Instead, they must be obtained using computation, a 
+sequence of operations, which in Smalltalk is performed using message sends.
+For example, assuming we have a model of a robot, we might obtain the
+color of the robot's left eye as follows:
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+	robot head leftEye color.
+\end{verbatim}
+\caption{Obtaining a reference via chained message sends}
+\label{non-local-reference}
+\end{center}
+\end{figure}
 
 
+Although we can hide an object reference behind a computational interface, we cannot
+hide a computation behind a object reference interface.
+Thus any kind of external API has to be presented through a computational, messaging 
+interface, even if the intention is not computation, but just access to a resource,
+  and all information hiding also requires messaging.  This has led languages
+like Self \cite{UngarS87} and Newspeak \cite{BrachaNewspeak} to effectively abandon identifiers as symbolic names for objects, 
+all objects are instead obtained by sending messages to other objects.
 
 \begin{itemize}
-\item Early bound
-\item Polymorphism only via messaging, interface/API only via messaging, this mixes 
-	interface with implementation and 
-\item 
+\item [mpw] not sure I have clearly explained this (the issue with computational 
 \end{itemize}
 
+In the World Wide Web on the other hand, access  to  resources is
+through Universal Resource Identifiers.  A client just provides a URI,
+and the browser or other access software retrieves the resource 
+identified.   The resource may be a static or computed, the client has 
+no way of knowing this.  So instead of hiding a simple declarative
+computational model behind a more complex computational one,
+the WWW hides a complex computational model behind the simple
+declarative one.
 
-\subsection{Interface vs. Implementation}
+On the Web, everything is just a document that has a name, even 
+if it may be backed/generated dynamically by an application.  So instead of having
+a package-tracking application that takes a parameter ( 2 entities),
+one can simply take the view that ``every package has its own 
+web-site'', which is then just one entity referenced by a single,
+parameterless identifier.
 
-Smalltalk:  have to use messaging for interface/polymorphism.
 
-\subsection{External Resources}
+URIs are a generalization of Uniform Resource Locators, which specify a
+resource by its network location and access path and Uniform Resource Names,
+which specify
+a resource by a logical name and leave it to system processes to 
+determine the exact location.  In practice, most URIs are located on
+a continuum with URNs on one end and URLs on the other.
 
-Files/Paths, URLs, Distributed Objects, messaging hiding behind identifier access
+\section{User-level identifiers}
 
-\subsection{Complex Identifiers}
+In addition to the entities that can be referred to directly by the programming language's 
+built-in identifiers, there are many other entities that typically cannot.  However,
+these entities still need to be referenced somehow, so developers are required
+to construct their own identifiers and methods for resolving them to the actual
+entities.
+
+Files, for example are usually referenced by their filename, or more precisely
+a string that represents their access path in the filesystem from the root 
+directory.   The operating system is responsible for mapping these full
+paths to entities allowing access to the contents of the file.  For example accesing
+the current user's ``.bashrc'' file looks as follow:
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+   char fullname[MAXPATHLEN];
+   snprintf(fullname,MAXPATHLEN,"%s/.bashrc",
+                            getenv("HOME"));
+   int fd = open( filename );
+   if ( fd >= 0 ) { 
+      //... read contents of file using read()
+      close(fd);
+   }
+\end{verbatim}
+\caption{Resolving a name in the user's home directory to a file}
+\label{posix-file-resolve}
+\end{center}
+\end{figure}
+
+The string represents a user-level identifier, which is just a plain character
+string that has no meaning to the programming language and must be 
+manually resolved by the developer in the {\em identifier-aware} style 
+introduced in Section~\ref{identifiers}.  In fact, two different identifiers
+are resolved in Figure~\ref{posix-file-resolve}:  first, the identifier {\bf HOME}
+from the domain of environment variables is needed, which requires calling
+the {\bf getenv()} function to resolve the identifier string to a value.  That result,
+also a string, is then combined with the name of the file in question and passed
+to the {\bf open()} system call to return an actual file reference.  Boundary conditions
+and error checking have largely been elided.
+
+Convenience APIs can ameliorate the situation somewhat, for example shortening 
+the multiple steps above into a single (slightly verbose) expression and making the
+string processing safer.  However, they cannot
+change the fundamental fact that the identifiers in question are basic strings,
+manipulating them requires string processing and user-level resolution of the
+string to an entity.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+   NSData dataWithContentsOfFile:
+     ((NSProcessInfo processInfo
+        environment 
+        objectForKey:'HOME') 
+       stringByAppendingPathComponent:'.bashrc')
+
+\end{verbatim}
+\caption{Cocoa convenience API for accessing file content}
+\label{cocoa-file-contents}
+\end{center}
+\end{figure}
+
+
+Which identifiers we can use in an oblivious style and which we need to
+be aware of and resolve ourselves is usually pre-determined by the programming
+language.
+The same identifier that needs to be created using string processing from various
+components in both the POSIX and the Cocoa can be written directly in a typical
+Unix shell, including the variable part.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+	cat $HOME/.basrhc
+\end{verbatim}
+\caption{File contents in a shell}
+\label{sh-file-contents}
+\end{center}
+\end{figure}
+
+The lack of string quotes is not just cosmetic: both the variable and the filename
+are not just opaque strings, but entities that the shell is aware of and can identify
+using the identifiers provided,for example being able to assist by autocomplete 
+or wildcard expansion.
+
+The large gap in the ease of talking about 
+different types of objects is one of the motivations for Domain Specific Languages,
+but integrating multiple
+
+Such path-based access is not restricted to external resources, but also
+prevalent when accessing dynamic data structures such as an XML DOM,
+PDF objects 
+
+
+\subsection{In-Memory Paths}
+
+
+
+
+
+KVO, XML DOM Access, XPath, various types of PDF references, 
 
 \subsection{Manipulating Identifiers}
 
+User-interface wants to manipulate a particular part of an object, not the object that is 
+currently there, therefore needs a runtime/symbolic representation of that location.
+KVC/Bindings use strings, Smalltalk/Java ValueHolders use a level of indirection,
+introducing user-level variables.
 
-\subsection{Identifier Awareness}
+
+\subsection{Network Resources}
+
+Distributed Objects
+
 
 
 
@@ -175,7 +324,23 @@ Files/Paths, URLs, Distributed Objects, messaging hiding behind identifier acces
 
 \end{itemize}
 
+
+
 \section{Polymorphic Identifiers}
+\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
+
+
+
+\begin{itemize}
+
+\item URL syntax
+\item User-level scheme resolvers
+\item Mix of run-time / compile-time evaluation (can be fully runtime)
+\item scheme:scheme to make resolvers part of the language and allow identifier-oblivious
+	programming for user-defined identifiers
+\item ref: to allow 
+
+\end{itemize}
 
 
 \section{Examples}
@@ -200,8 +365,6 @@ have the same underlying cause:   lack of a first class identifiers.
 
 Coping mechanisms:  
 \begin{itemize}
-\item access to 'things' via messages rather than directly via identifiers.  
-\item identifiers encoded as strings in the programming language
 \item introduction of separate objects that act like identifiers
 \item use of DSLs
 \end{itemize}
@@ -219,8 +382,9 @@ The E language adds URL for far references and some stuff
 
 \subsection{ThingLab}
 
-Paths in ThingLab were necessary in order to specify subparts of objects and allow them
-to be referenced.
+ThingLab adds path-based access to the base Smalltalk language in order to support
+constraints referencing parts of objects, say the vertex of a triangle.   It does not
+expand this path-based access to other domains or make it user-extensible.
 
 \subsection{. references}
 
