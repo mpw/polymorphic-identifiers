@@ -156,29 +156,53 @@ hide a computation behind a object reference interface.
 Thus any kind of external API has to be presented through a computational, messaging 
 interface, even if the intention is not computation, but just access to a resource,
   and all information hiding also requires messaging.  This has led languages
-like Self \cite{UngarS87} and Newspeak \cite{BrachaNewspeak} to effectively abandon identifiers as symbolic names for objects, 
+like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as symbolic names for objects, 
 all objects are instead obtained by sending messages to other objects.
 
-\begin{itemize}
-\item [mpw] not sure I have clearly explained this (the issue with computational 
-\end{itemize}
+On the World Wide Web with its REST architectural model the situation is exactly the reverse: 
+ the interface
+to resources is their identifier, the Uniform Resource Locator (URL).   Wether
+computation happens in providing the resource is a hidden implementation detail
+(ignoring the messaging protocols usually required to transmit the resource
+to the client).  
 
-In the World Wide Web on the other hand, access  to  resources is
-through Universal Resource Identifiers.  A client just provides a URI,
-and the browser or other access software retrieves the resource 
-identified.   The resource may be a static or computed, the client has 
-no way of knowing this.  So instead of hiding a simple declarative
-computational model behind a more complex computational one,
-the WWW hides a complex computational model behind the simple
-declarative one.
 
-On the Web, everything is just a document that has a name, even 
-if it may be backed/generated dynamically by an application.  So instead of having
-a package-tracking application that takes a parameter ( 2 entities),
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+http://www.shipper.com/track/12345678
+\end{verbatim}
+\caption{A Uniform Resource Locator}
+\label{url-example}
+\end{center}
+\end{figure}
+
+So instead of having
+a package-tracking application that takes a parameter (2 entities),
 one can simply take the view that ``every package has its own 
 web-site'', which is then just one entity referenced by a single,
-parameterless identifier.
+parameterless identifier.  Instead of hiding references behind messaging,
+messaging is hidden behind an identifier, and RESTful web applications
+perform computations by dereferencing a series of identifiers, that 
+are provided incrementally and dynamically in responses.
 
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+urn:isbn:123123123
+\end{verbatim}
+\caption{URN}
+\label{urn-example}
+\end{center}
+\end{figure}
+
+Whereas URLs specify an access path, including a network protocol, Uniform 
+Resource Names like the ISBN in Figure~\ref{urn-example} just specify a logical
+name, leaving the resolution of that name completely open.  In a sense, URNs
+correspond to interfaces 
+
+Uniform Resource Identifiers are a generalization of both Uniform Resource Locators
+and Uniform Resource Names.  
 
 URIs are a generalization of Uniform Resource Locators, which specify a
 resource by its network location and access path and Uniform Resource Names,
@@ -189,13 +213,16 @@ a continuum with URNs on one end and URLs on the other.
 
 \section{User-level identifiers}
 
+
 In addition to the entities that can be referred to directly by the programming language's 
-built-in identifiers, there are many other entities that typically cannot.  However,
-these entities still need to be referenced somehow, so developers are required
-to construct their own identifiers and methods for resolving them to the actual
+built-in identifiers, there are many other entities and situations where that is not possible.
+However, entities still need to be addressed, so developers are required
+to construct their own identifiers or references and methods for resolving them to the actual
 entities.
 
-Files, for example are usually referenced by their filename, or more precisely
+\subsection{External Resources}
+
+Files, for example are referenced by their filename, or more precisely
 a string that represents their access path in the filesystem from the root 
 directory.   The operating system is responsible for mapping these full
 paths to entities allowing access to the contents of the file.  For example accesing
@@ -253,7 +280,7 @@ string to an entity.
 
 
 Which identifiers we can use in an oblivious style and which we need to
-be aware of and resolve ourselves is usually pre-determined by the programming
+be aware of and resolve ourselves is pre-determined by the programming
 language.
 The same identifier that needs to be created using string processing from various
 components in both the POSIX and the Cocoa can be written directly in a typical
@@ -274,35 +301,25 @@ are not just opaque strings, but entities that the shell is aware of and can ide
 using the identifiers provided,for example being able to assist by autocomplete 
 or wildcard expansion.
 
-The large gap in the ease of talking about 
-different types of objects is one of the motivations for Domain Specific Languages,
-but integrating multiple
-
-Such path-based access is not restricted to external resources, but also
-prevalent when accessing dynamic data structures such as an XML DOM,
-PDF objects 
 
 
-\subsection{In-Memory Paths}
+\subsection{Dynamic data structures}
+
+Path-based access is not restricted to external resources, but also
+prevalent when accessing dynamic data structures
+
+ such as an XML DOM (xpath)
+
+\begin{itemize}
+\item [mpw] more details
+\end{itemize}
+
+\subsection{User Interfaces}
 
 
-
-
-
-KVO, XML DOM Access, XPath, various types of PDF references, 
-
-\subsection{Manipulating Identifiers}
-
-User-interface wants to manipulate a particular part of an object, not the object that is 
-currently there, therefore needs a runtime/symbolic representation of that location.
-KVC/Bindings use strings, Smalltalk/Java ValueHolders use a level of indirection,
-introducing user-level variables.
 
 
 \subsection{Network Resources}
-
-Distributed Objects
-
 
 
 
@@ -311,18 +328,69 @@ Distributed Objects
 \epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
 
 
-\epigraph{Trying to outsmart a compiler defeats much of the purpose of using one.}{Kernighan and Plauger, The Elements of Programming Style.}
+One aspect that virtually all user-level identifier mechanisms have in common is that they
+are based on string processing.  The use of strings makes user-level identifiers relatively
+close to language identifiers ({\bf \hbox{anObject}} vs {\bf \hbox{'anObject'}}), but brings with it a number of problems in terms of overhead, correctness and safety.
+
+As we saw above, the first problem is that a string is not an identifier, and therefore
+must be passed as an argument to some function or method to actually return
+ an object, either doubling (function+
+identifier) or tripling (class/object + message + string ) the number of entities involved to 
+retrieve the desired entity.  
+
+The compiler does not have insight into strings that may be used as user-level 
+identifiers at some point in the future, and therefore cannot determine wether 
+a string-based identifier is correct, or even syntactically well-formed.   The compiler
+and runtime also cannot help with turning the identifier into a more efficient representation
+like an index into a local store.  Instead, lookup must be performed using hash-tables
+or other dictionary structures at runtime on individual path components, 
+and complex paths must be first be decomposed into their components.
+
+All this run-time processing of strings is performed with general-purpose string
+processing libraries that do not take the identifier semantics into account, with
+many string operations capable of turning valid identifiers into invalid ones.
+While it was fairly easy to paper over the differences between strings as 
+data structures for human-readable text and strings as identifiers for programs,
+the differences are becoming more obvious with internationalization, as the
+problems making Perl UTF8 or Unicode aware demonstrate \cite{perl-unicode}
+
+Mixing strings-as-use-data with strings-as-identifiers also has well known
+security problems such as shell-escaping and SQL-injection, one of the
+biggest sources of vulnerabilities on the web.
 
 
 
-\begin{itemize}
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+u := NSURL alloc
+           initWithScheme:'http'
+           host:'www.example.org'
+           path:'/' 
+\end{verbatim}
+\caption{URL initialized in an object-oriented fashion}
+\label{url-as-obj}
+\end{center}
+\end{figure}
 
-\item Processing the representation, details obscure intent
-\item Mixing data and identifiers
-\item Internationalization makes things (much) worse
-\item Security, quoting, (SQL)-injection attacks
+On the other hand, using non-string types, while increasing safety somewhat,
+obscures intent further by breaking up the identifiers.
+It is certainly debatable wether the more object-oriented
+initialization of Figure~\ref{url-as-obj}  has any practical benefits over a
+simple initialization from string as in Figure~\ref{url-as-string}.
 
-\end{itemize}
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+u := NSURL URLWithString:'http://www.example.org'
+\end{verbatim}
+\caption{URL initialized with a single string}
+\label{url-as-string}
+\end{center}
+\end{figure}
+
+
 
 
 
@@ -332,41 +400,77 @@ Distributed Objects
 
 
 \begin{itemize}
+\item encapsulate processing required for user-extensible identifiers / resource access
+\item oblivious or aware not dependent on type of reference
+\item runtime or compile-time not dependent on type of reference
+\item computational or referential interface at will 
+\item ability to 
+
+\end{itemize}
+
+
+\begin{itemize}
+
 
 \item URL syntax
 \item User-level scheme resolvers
-\item Mix of run-time / compile-time evaluation (can be fully runtime)
+\item Mix of run-time / compile-time evaluation (can be fully runtime) without forcing
 \item scheme:scheme to make resolvers part of the language and allow identifier-oblivious
 	programming for user-defined identifiers
-\item ref: to allow 
+\item ref: allows access to identifiers in order to make any reference identifier-aware
+\item Semantics-preserving operations on identifiers \{\} , relative schemes, composite schemes
 
 \end{itemize}
 
 
 \section{Examples}
 
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+ host := 'citeseerx.ist.psu.edu'.
+ citeseer:=ref:http://{host}/viewdoc/summary
+ citeseer getWithArgs doi:'10.1.1.41.7628'
+\end{verbatim}
+\caption{URL arguments via reference and higher order message}
+\label{url-args}
+\end{center}
+\end{figure}
+
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+tell application "iTunes"
+  set trackname to name of current track
+end tell
+tell application "iChat"
+  set status message to trackname
+end tell
+
+app:iChat/statusMessage := app:iTunes/currentTrack/name
+\end{verbatim}
+\caption{Access to applications}
+\label{url-args}
+\end{center}
+\end{figure}
+
+
+(aus:  http://developer.apple.com/cocoa/applescriptforapps.html)
+
+
+Mit Arches:
+
+
 \section{Implementation}
 
 
 
-Existing mechanisms for variable access via built-in identifiers not adequate in 
-all domains, for example:
- \begin{itemize}
-
-\item path-based access to various in-memory data structures (e.g. DOMs)
-\item GUIs, serialization and notification mechanisms require treating a variable
-	reference as a parameter.
-\item external resources such as files and the web
-
-\end{itemize}
-
-Although these problems seem to be different from each other, we argue that they
-have the same underlying cause:   lack of a first class identifiers.  
-
 Coping mechanisms:  
 \begin{itemize}
 \item introduction of separate objects that act like identifiers
-\item use of DSLs
 \end{itemize}
 
 
@@ -379,6 +483,9 @@ LISP quoting allows references to not be evaluated, but the returned value is ju
 \subsection{E}
 
 The E language adds URL for far references and some stuff
+
+\subsection{Domain Specific Languages}
+
 
 \subsection{ThingLab}
 
@@ -401,19 +508,32 @@ In the Icon programming language, identifiers (references) can be first class va
 and there are complex rules for when a reference remains a reference and when
 it's value is used.
 
+\subsection{Resource Oriented Programming}
+
+\subsection{ValueHolder objects}
+
+\subsection{Key Value Coding, Observing, Binding}
+
+\subsection{User Level File Systems}
+
+For example, FUSE  \cite{fuse}
+
+\subsection{Internet Programming Languages and Systems}
+
+What \cite{wheat}, Web-Machine, Presto, 
 
 \section{Summary and Outlook}
 
 
 
-\appendix
-\section{Appendix A}
+%\appendix
+%\section{Appendix A}
 
-This is the text of the appendix, if you need one.
+%This is the text of the appendix, if you need one.
 
-\acks
+%\acks
 
-Acknowledgments, if needed.
+%Acknowledgments, if needed.
 
 % We recommend abbrvnat bibliography style.
 
