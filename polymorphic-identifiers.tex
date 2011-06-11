@@ -377,7 +377,9 @@ On the other hand, using non-string types, while increasing safety somewhat,
 obscures intent further by breaking up the identifiers.
 It is certainly debatable wether the more object-oriented
 initialization of Figure~\ref{url-as-obj}  has any practical benefits over a
-simple initialization from string as in Figure~\ref{url-as-string}.
+simple initialization from string as in Figure~\ref{url-as-string}, and in
+the end the components are still strings and must be converted/combined
+into the full URL at runtime.
 
 
 \begin{figure}[htbp]
@@ -397,9 +399,156 @@ u := NSURL URLWithString:'http://www.example.org'
 \section{Polymorphic Identifiers}
 \epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
+Syntactically, Polymorphic Identifiers are URIs \cite{rfc3986}, so external resources
+such as web pages or files can be addressed directly in an identifier-oblivious
+style.  The examples in Figure~\ref{first-polymorphic-examples} show a plain
+identifier that will retrieve the ACM's home page, an assignment that will read
+the contents of a file into a local variable and finally an assignment that will
+write the contents of the local variable to a file, effecting a file copy operation.
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+http://www.acm.org/
+joesBashrc := file:/Users/joe/.bashrc
+file:/Users/mike/.bashrc := joesBashrc
+\end{verbatim}
+\caption{Polymorphic Identifiers in simple expressions}
+\label{first-polymorphic-examples}
+\end{center}
+\end{figure}
+
+\subsection{Schemes}
+
+The scheme name part of the identifier symbolically designates the handler object which 
+is used to resolve the remainder of the identifier.   A user-extensible class hierarchy of
+scheme resolvers handle 
+return bindings that map to actual objects. The scheme resolvers are made available to the 
+language by associating them with a scheme name in the special {\bf scheme} scheme,
+as shown in Figure~\ref{scheme-scheme-http}. 
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+scheme:http := URLSchemeResolver scheme.
+scheme:file := FileSchemeResolver scheme.
+\end{verbatim}
+\caption{Adding the http scheme}
+\label{scheme-scheme-http}
+\end{center}
+\end{figure}
+
+The scheme scheme can also be queried,
+so the expression {\bf scheme:http} returns the currently installed http handler, and 
+{\bf scheme:scheme} returns the scheme scheme, allowing the installed schemes to
+be listed.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+scheme:scheme
+    file, ftp, default, var, bundle, defaults, 
+    sel, mainbundle, app, scheme, http,
+    env, ref, class,  https
+\end{verbatim}
+\caption{List of schemes via scheme:scheme}
+\label{scheme-scheme}
+\end{center}
+\end{figure}
+
+\subsection{In-memory access}
+
+The {\bf var} scheme refers to in-memory variables, so {\bf var:anObject} references the
+local variable {\bf anObject}.   Compound paths can be given and are resolved in
+cooperation with the object, usually by sending unary messages.
+
+The {\bf default} scheme 
+is a special scheme that is substituted when a scheme is not otherwise provided.
+With the {\bf default} scheme set to the {\bf var} scheme, the {\bf var:} can be 
+dropped and we can refer to the local {\bf anObject} variable just by its name.
+However, the default scheme can be set to some other scheme if that is more
+convenient for the task at hand, as shown in Figure~\ref{file-as-default-scheme},
+where a file copy is performed after the default scheme is set to file.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+scheme:default := scheme:file
+myBashRc := .basrhc
+\end{verbatim}
+\caption{File copy with file: as default scheme}
+\label{file-as-default-scheme}
+\end{center}
+\end{figure}
+
+One syntactic limitation of the default scheme mechanism is that it does not allow
+compound paths, so for compound paths a full URI with scheme must be used.
+
+
+\subsection{First class references}
+
+The bindings returned by scheme-resolvers are usually ephemeral, used just 
+to get to the value pointed to by the identifier, either reading or writing it.  This
+makes it possible to program with arbitrary and user-defined identifiers in
+an identifier-oblivious style.  It also means that for sufficiently simple scheme-resolvers,
+the binding can actually be elided if the compiler can determine that it is not needed.
+
+However, as we saw earlier, it is sometimes
+desirable to use the identifier-aware style.  In order to do this, the language
+must provide access to the bindings used in resolving the identifier.
+
+The {\bf ref} scheme prevents evaluation of the binding and thus allows access
+to the binding itself.  
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+a := 42
+b := ref:var:a.
+b value  -> 42
+b bindValue:2
+a -> 2
+\end{verbatim}
+\caption{ref}
+\label{ref-binding}
+\end{center}
+\end{figure}
+
+
+\subsection{Abstraction}
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+file:{env:HOME}/.bashrc
+\end{verbatim}
+\caption{User's .bashrc via parametrized polymorphic identifiers}
+\label{bashrc-pi}
+\end{center}
+\end{figure}
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+base := ref:http://datatracker.ietf.org/doc/.
+scheme:rfc := RelScheme schmeWithBase:base.
+uriSyntax := rfc:rfc2396.
+\end{verbatim}
+\caption{A customized scheme for looking up RFCs}
+\label{rfc-scheme}
+\end{center}
+\end{figure}
+
+
+
 
 
 \begin{itemize}
+\item be able to extend the language  / the types of objects 
 \item encapsulate processing required for user-extensible identifiers / resource access
 \item oblivious or aware not dependent on type of reference
 \item runtime or compile-time not dependent on type of reference
@@ -409,15 +558,10 @@ u := NSURL URLWithString:'http://www.example.org'
 \end{itemize}
 
 
+
 \begin{itemize}
 
 
-\item URL syntax
-\item User-level scheme resolvers
-\item Mix of run-time / compile-time evaluation (can be fully runtime) without forcing
-\item scheme:scheme to make resolvers part of the language and allow identifier-oblivious
-	programming for user-defined identifiers
-\item ref: allows access to identifiers in order to make any reference identifier-aware
 \item Semantics-preserving operations on identifiers \{\} , relative schemes, composite schemes
 
 \end{itemize}
@@ -429,8 +573,8 @@ u := NSURL URLWithString:'http://www.example.org'
 \begin{center}
 \begin{verbatim}
  host := 'citeseerx.ist.psu.edu'.
- citeseer:=ref:http://{host}/viewdoc/summary
- citeseer getWithArgs doi:'10.1.1.41.7628'
+ viewCiteSeer:=ref:http://{host}/viewdoc/summary
+ viewCiteSeer getWithArgs doi:'10.1.1.41.7628'
 \end{verbatim}
 \caption{URL arguments via reference and higher order message}
 \label{url-args}
@@ -449,43 +593,42 @@ end tell
 tell application "iChat"
   set status message to trackname
 end tell
-
-app:iChat/statusMessage := app:iTunes/currentTrack/name
 \end{verbatim}
-\caption{Access to applications}
-\label{url-args}
+\caption{Using AppleScript to set chat status from track name}
+\label{AppleScript}
 \end{center}
 \end{figure}
 
 
-(aus:  http://developer.apple.com/cocoa/applescriptforapps.html)
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+app:iChat/statusMessage := app:iTunes/currentTrack/name
+\end{verbatim}
+\caption{Access to applications via polymorphic identifiers}
+\label{NonAppleScript}
+\end{center}
+\end{figure}
 
-
-Mit Arches:
 
 
 \section{Implementation}
 
 
 
-Coping mechanisms:  
-\begin{itemize}
-\item introduction of separate objects that act like identifiers
-\end{itemize}
-
-
 \section{Related Work}
 
 \subsection{LISP Quoting}
 
-LISP quoting allows references to not be evaluated, but the returned value is just a symbol.
+LISP quoting allows references to not be evaluated.
 
 \subsection{E}
 
-The E language adds URL for far references and some stuff
+The E language\cite{MillerRobustComposition}  adds URL for far references.
 
 \subsection{Domain Specific Languages}
 
+\subsection{Key Value Coding, Observing, Binding}
 
 \subsection{ThingLab}
 
@@ -493,36 +636,72 @@ ThingLab adds path-based access to the base Smalltalk language in order to suppo
 constraints referencing parts of objects, say the vertex of a triangle.   It does not
 expand this path-based access to other domains or make it user-extensible.
 
-\subsection{. references}
+\subsection{Path-based and indirect access in programming languages}
 
-
-
-\subsection{Properties}
+Programming languages such as C, C++ or Pascal have facilities for composite
+identifiers, for example using the dot or {\bf -> } operators, but these facilities allow
+direct access to the internal data, as does handing out pointers to internal parts.
 
 Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
-message sending, thus allowing path-based access 
+message sending, thus allowing path-based access under dynamic control of the object
+in question.  However, this does not allow user-defined identifiers or 
 
 \subsection{Icon}
 
-In the Icon programming language, identifiers (references) can be first class values,
+In the Icon programming language \cite{IconRef} , identifiers (references) can be first class values,
 and there are complex rules for when a reference remains a reference and when
-it's value is used.
+it's value is used.  However, the rules are implicit and there is no way for the 
+developer to choose when to be identifier-aware or identifier-oblivious.  Furthermore,
+there is no way for the user to extend the language with new types of references 
+or behaviors.
 
-\subsection{Resource Oriented Programming}
 
-\subsection{ValueHolder objects}
 
-\subsection{Key Value Coding, Observing, Binding}
+\subsection{Proxies, Composition Filters etc.}
 
-\subsection{User Level File Systems}
+Proxies (Miller paper), Foote/Johnson, various future/lazy systems, Distributed Smalltalk,
+NeXT/Apple Distributed Objects.  Issues:  ``Note on Distributed Computing'', treating
+remote objects as if they were local and distribution didn't exist.  
 
-For example, FUSE  \cite{fuse}
+Our approach differs in that we handle the difference between remote and local at
+the identifier/reference level, rather than at the object (distributed objects) or 
+message/call level (RPC).  We would argue that the proxies used in distributed
+objects can be regarded as first-class identifiers in our sense, and that the 
+metaprogramming techniques that are typically employed are there to go from
+the identifier-aware style to an identifier-oblivious style.  However, doing this
+in the ``object space'' mixes user-level and system-level functionality, with
+for example the typical difficulty of controlling the proxy itself when all messages
+are forwarded to the remote object.
 
 \subsection{Internet Programming Languages and Systems}
 
-What \cite{wheat}, Web-Machine, Presto, 
+Wheat \cite{wheat}, Web-Machine, Presto, Resource Oriented Programming,
+various specialized systems that export a network file-system.
+
+\subsection{User Level File Systems}
+
+User level filesystems like FUSE   \cite{fuse} or the BSD  ? \cite{bsdfuse} allow
+user-level code to add new filesystems to the Unix kernel, without requiring
+kernel modifications or impacting operating system kernel stability.
+
+This approach has enabled many types of remote resources such as 
+YouTube videos with atttributes and thumbnails or local resources
+such as images with their attributes to be accessed using common
+POSIX file APIs or convenience APIs built on top of them.
+
+While such integration is a
+
+However:  OS-level, so mediated via the kernel, so cannot reasonably incorporate
+local, in-memory resources.   Not integrated into programming language.
+
+But:  should be possible to bridge both-ways, would be very cool \ldots
+
 
 \section{Summary and Outlook}
+
+Introduced user-extensible identifiers based on URL syntax and 
+integrated them as a fundamental part of a programming language
+as the sole identifier lookup/evaluation system.
 
 
 
