@@ -5,14 +5,14 @@
 %-----------------------------------------------------------------------------
 
 
-\documentclass[preprint,authoryear,10pt]{sigplanconf}
+\documentclass[preprint,authoryear]{acm_proc_article-sp}
 
 
 \usepackage{amsmath}
 \usepackage{epigraph}
 \usepackage[colorlinks=true,
-        linkcolor=black,
-        citecolor=black,
+        linkcolor=blue,
+        citecolor=red,
         filecolor=black,
         pagecolor=black,
         urlcolor=black,
@@ -34,12 +34,15 @@
 \title{Polymorphic Identifiers}
 %\subtitle{Subtitle Text, if any}
 
-\authorinfo{Marcel Weiher}
-           {metaobject ltd.}
-           {marcel@metaobject.com}
-\authorinfo{Robert Hirschfled}
-           {Hasso Plattner Institut}
-           {hirschfeld@acm.org}
+\numberofauthors{2}
+\author{
+\alignauthor Marcel Weiher\\
+       \affaddr{metaobject ltd.}\\
+       \email{marcel@metaobject.com}
+\alignauthor Robert Hirschfeld\\
+       \affaddr{Hasso Plattner Institut}\\
+       \email{hirschfeld@acm.org}
+}
 
 \maketitle
 
@@ -51,10 +54,10 @@ These identifiers allow stratified designs clearly separating meta- and base-lev
 as well as light-weight domain-specificity with high levels of expressiveness, 
 \end{abstract}
 
-\category{CR-number}{subcategory}{third-level}
+\category{H.4}{Information Systems Applications}{Miscellaneous}
 
-\terms 
-\keywords
+\terms{Language Design}
+\keywords{ACM proceedings, DLS, Dynamic Languages} % NOT required for Proceedings
 \setlength{\epigraphrule}{0pt}
 
 
@@ -98,7 +101,7 @@ a slot named {\bf 'anObject'} and then return the value stored at that slot.
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
-(localContext variableNamed:'ÕanObjectÕ') value.
+(localContext variableNamed:'anObject') value.
 \end{verbatim}
 \caption{Lookup of a local variable}
 \label{variable-lookup}
@@ -108,7 +111,7 @@ a slot named {\bf 'anObject'} and then return the value stored at that slot.
 
 Some  languages actually perform all these steps at runtime, but most 
 have a compiler help with efficiency by converting the names to indexes into
-the local context and the value lookup into a simple load from memory.
+the local context and the value lookup into a simple indexed load from memory.
 
 Most programming languages don't just optimize the implementation of the identifier
 lookup operation, but also the interface.  Instead of having to specify how to
@@ -181,7 +184,12 @@ So instead of having
 a package-tracking application that takes a parameter (2 entities),
 one can simply take the view that ``every package has its own 
 web-site'', which is then just one entity referenced by a single,
-parameterless identifier.  Instead of hiding references behind messaging,
+parameterless identifier.  This type of encapsulation behind
+a single, parameterless identifier makes bookmarks and single
+browser-based navigation possible.
+
+
+ Instead of hiding references behind messaging,
 messaging is hidden behind an identifier, and RESTful web applications
 perform computations by dereferencing a series of identifiers, that 
 are provided incrementally and dynamically in responses.
@@ -354,7 +362,7 @@ data structures for human-readable text and strings as identifiers for programs,
 the differences are becoming more obvious with internationalization, as the
 problems making Perl UTF8 or Unicode aware demonstrate \cite{perl-unicode}
 
-Mixing strings-as-use-data with strings-as-identifiers also has well known
+Mixing strings-as-user-data with strings-as-identifiers also has well known
 security problems such as shell-escaping and SQL-injection, one of the
 biggest sources of vulnerabilities on the web.
 
@@ -385,7 +393,7 @@ into the full URL at runtime.
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
-u := NSURL URLWithString:'http://www.example.org'
+u:=NSURL URLWithString:'http://www.example.org'
 \end{verbatim}
 \caption{URL initialized with a single string}
 \label{url-as-string}
@@ -486,6 +494,7 @@ One syntactic limitation of the default scheme mechanism is that it does not all
 compound paths, so for compound paths a full URI with scheme must be used.
 
 
+
 \subsection{First class references}
 
 The bindings returned by scheme-resolvers are usually ephemeral, used just 
@@ -510,64 +519,123 @@ b value  -> 42
 b bindValue:2
 a -> 2
 \end{verbatim}
-\caption{ref}
+\caption{Accessing a variable via its binding}
 \label{ref-binding}
 \end{center}
 \end{figure}
 
+Common operations on bindings are retrieving, binding and unbinding a value and testing 
+wether a binding has a value, as shown in Figure~\ref{isBound} for the {\bf env} scheme
+that provides access to Unix environment variables.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+> ref:env:bozo isBound
+0
+> env:bozo := 'hi'
+> ref:env:bozo isBound
+1
+\end{verbatim}
+\caption{Checking wether an environment variable is bound to a value}
+\label{isBound}
+\end{center}
+\end{figure}
+
+
+Bindings are scheme-specific and can include additional API specific to that type of scheme.
+For example, file bindings are analogues of the Java {\bf File} object and can deliver
+meta-data about and perform operations on the file as shown in Figure~\ref{ref-file-dir}.
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+> newDir := ref:file:testDir 
+> newDir isBound 
+0
+> newDir mkdir 
+> newDir isBound
+1
+> newDir isDirectory 
+1
+\end{verbatim}
+\caption{File and directory manipulation}
+\label{ref-file-dir}
+\end{center}
+\end{figure}
+
+
+
 
 \subsection{Abstraction}
 
-
+With richer identifiers, it makes sense to allow abstractions to be built with these identifiers.
+One example is parametrization, with an identifier having parameters that are evaluated
+at runtime, as seen in Figure~\ref{bashrc-pi} that retrieves the current user's {\bf .bashrc} 
+and is equivalent to Figures~\ref{posix-file-resolve}, \ref{cocoa-file-contents} and 
+\ref{sh-file-contents}.
 
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
 file:{env:HOME}/.bashrc
 \end{verbatim}
-\caption{User's .bashrc via parametrized polymorphic identifiers}
+\caption{Parametrized Identifier}
 \label{bashrc-pi}
 \end{center}
 \end{figure}
 
+Another example is the relative scheme resolver, which takes a base-binding
+and evaluates its references relative to that base.  Figure~\ref{rfc-scheme} shows
+how to use a relative scheme resolver to build a scheme that can directly
+reference Internet Engineering Task Force Request For Comments (IETF RFCs).
+The end effect is that we can hide the actual location and access method for
+the IETF RFCs behind a scheme so we can access those RFCs directly.
 
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
 base := ref:http://datatracker.ietf.org/doc/.
-scheme:rfc := RelScheme schmeWithBase:base.
+scheme:rfc := RelScheme schemeWithBase:base.
 uriSyntax := rfc:rfc2396.
 \end{verbatim}
-\caption{A customized scheme for looking up RFCs}
+\caption{Retrieving RFC 2396 (URI Syntax) via custom rfc: scheme}
+\label{rfc-scheme}
+\end{center}
+\end{figure}
+
+A sequential composition scheme simply searches a list of other schemes
+for a particular identifier.  It is parametrized with a list of schemes and 
+returns 
+
+
+\section{Implementation}
+
+Polymorphic Identifiers have been implemented as part of Objective-Smalltalk,
+a Smalltalk built on top of the Objective-C runtime, similar to MacRuby \cite{macruby}. 
+
+
+
+\section{Discussion}
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+base := ref:file:{env:HOME}.
+scheme:home := RelScheme schemeWithBase:base.
+home:.bashrc.
+\end{verbatim}
+\caption{Accessing .bashrc via custom home: scheme}
 \label{rfc-scheme}
 \end{center}
 \end{figure}
 
 
 
-
-
-\begin{itemize}
-\item be able to extend the language  / the types of objects 
-\item encapsulate processing required for user-extensible identifiers / resource access
-\item oblivious or aware not dependent on type of reference
-\item runtime or compile-time not dependent on type of reference
-\item computational or referential interface at will 
-\item ability to 
-
-\end{itemize}
-
-
-
-\begin{itemize}
-
-
-\item Semantics-preserving operations on identifiers \{\} , relative schemes, composite schemes
-
-\end{itemize}
-
-
-\section{Examples}
 
 \begin{figure}[htbp]
 \begin{center}
@@ -603,17 +671,13 @@ end tell
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
-app:iChat/statusMessage := app:iTunes/currentTrack/name
+app:iChat/statusMessage :=
+                app:iTunes/currentTrack/name
 \end{verbatim}
 \caption{Access to applications via polymorphic identifiers}
 \label{NonAppleScript}
 \end{center}
 \end{figure}
-
-
-
-\section{Implementation}
-
 
 
 \section{Related Work}
@@ -659,7 +723,7 @@ or behaviors.
 
 \subsection{Proxies, Composition Filters etc.}
 
-Proxies (Miller paper), Foote/Johnson, various future/lazy systems, Distributed Smalltalk,
+Proxies\cite{VanCutsemMiller}, Foote/Johnson, various future/lazy systems, Distributed Smalltalk,
 NeXT/Apple Distributed Objects.  Issues:  ``Note on Distributed Computing'', treating
 remote objects as if they were local and distribution didn't exist.  
 
@@ -716,10 +780,10 @@ as the sole identifier lookup/evaluation system.
 
 % We recommend abbrvnat bibliography style.
 
-\bibliographystyle{abbrvnat}
+\bibliographystyle{abbrv}
 
 % The bibliography should be embedded for final submission.
 \bibliography{polymorphic-identifiers}
 
-
+\balancecolumns
 \end{document}
