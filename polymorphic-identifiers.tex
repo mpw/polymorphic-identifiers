@@ -332,7 +332,7 @@ prevalent when accessing dynamic data structures
 
 
 \subsection{The Trouble with Strings}
-
+\label{stringtrouble}
 \epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
 
 
@@ -625,6 +625,80 @@ The same goes for Objective-Smalltalk methods, which are also indistinguishable 
 Objective-C methods, making Objective-Smalltalk in a sense a meta-circular language
 that is written in itself, or more precisely written in variants of itself \cite{kleinvm}\cite{squeak}.
 
+Figures~\ref{get-env}-\ref{setvalue-env} show the implementation of a simple scheme,
+the env-scheme that provides access to Unix environment variables.  Figure~\ref{get-env}
+shows the {\bf bindingForName:inContext:} method that is the main access point for
+converting from an identifier to a binding.  In this case, a generic binding object is returned
+that simply stores the name of the identifier and lets the scheme that created it resolve
+access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+-(const char*)cstringValueOfBinding:aBinding
+{
+  return getenv([[aBinding name] UTF8String]);
+}
+
+-bindingForName:aName inContext:aContext
+{
+  return [GenericBinding bindingWithName:aName scheme:self];
+}
+
+-valueForBinding:aBinding
+{
+  const char *val=[self cstringValueOfBinding:aBinding];
+  if ( val ) {
+    return [NSString stringWithUTF8String:val];
+  } else {
+    return nil;
+  }
+}
+\end{verbatim}
+\caption{Basic lookup in env-scheme}
+\label{get-env}
+\end{center}
+\end{figure}
+
+In this case, the name of the identifier is simply passed to the POSIX {\bf getenv()} function.
+Setting the value is handled in an analog fashion using the {\bf setenv()} function.
+
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+-(void)setValue:val forBinding:binding
+{
+  val=[newValue stringValue];
+  if ( val  ) {
+    setenv([[binding name] UTF8String],[value UTF8String],1);
+  } else {
+    unsetenv([[binding name] UTF8String]);
+  }
+}
+\end{verbatim}
+\caption{Set value in env-scheme}
+\label{setvalue-env}
+\end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+-(BOOL)isBoundBinding:aBinding
+{
+  return [self cstringValueOfBinding:aBinding] != NULL;
+}
+\end{verbatim}
+\caption{Checking for presence of value in env-scheme}
+\label{hasValue-env}
+\end{center}
+\end{figure}
+
+
 
 \section{Discussion}
 
@@ -691,44 +765,67 @@ app:iChat/statusMessage :=
 \section{Related Work}
 
 
+\subsection{Path-based access in languages}
 
-\subsection{E}
+Programming languages such as C, C++ or Pascal have facilities for composite
+identifiers, for example using the dot or {\bf -> } operators, but these facilities allow
+direct access to the internal data, without any ability of the structure in question to 
+mediate, as does handing out pointers to internal parts.
 
-The E language\cite{MillerRobustComposition}  supports URI-Expressions such as
-the following:  {\bf <file:c:/jabbertest> } or {\bf <http://www.erights.org>}.  However,
-it only supports using them in the reference-aware style and does not integrate 
-ordinary identifiers into the URI mechanism, provide abstraction mechanisms
-for URIs or an extension mechanism. 
+Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
+message sending, thus allowing path-based access under dynamic control of the object
+in question, but without having first-class references or the ability to access other
+types of resources using the same mechanism.
 
-\subsection{Domain Specific Languages}
+ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
+constraints referencing parts of objects, say the vertex of a triangle, and these
+references do exist as first class objects that can be passed to other objects.
+   It does not
+expand this path-based access to other domains or make it user-extensible.
 
-Polymorphic Identifiers are an attempt to achieve at least some of the benefits
-of Domain Specific Languages without many of the costs.  
+\subsection{Unified path-based access mechanisms}
 
 
-\subsection{Phantom XML}
+User level filesystems like FUSE\cite{fuse} or the BSD Pass-to-User-Space\cite{puffs} 
+system allow
+user-level code to add new filesystems to the Unix kernel, without requiring
+kernel modifications or impacting operating system kernel stability.
+
+This approach allows many sorts of local and remote data-types to be 
+treated as files in a filesystem and made available to the wide variety
+of Unix tools that can navigate and process such files.  
+
+However, this support requires global installation of handlers in the operating
+system, which also must mediate access, making integration of in-memory 
+variables difficult at best.  The identifiers used to access these resources
+are also still strings that are not integrated with the identifier mechanism of
+the host language, with all the problems discussed in Section~\ref{stringtrouble}.
+
+Using FUSE/puffs filesystems as scheme resolvers without kernel intervention seems
+like a useful addition, as is making scheme-resolvers available to the Unix kernel
+via FUSE/puffs.
+
+The Plan9\cite{plan9names}\cite{plan9network} operating system from Bell Labs goes further than FUSE in integrating
+all data, local and network resources into a single hierarchical namespace.  Similar
+caveats as for FUSE apply.
 
 Phantom XML\cite{phantomxml} unifies access to data by treating all data as
 XML trees, allowing queries against this XML representation of the data without
 actually converting it to XML first.  
 
 
-\subsection{Path-based and indirect access in programming languages}
-
-Programming languages such as C, C++ or Pascal have facilities for composite
-identifiers, for example using the dot or {\bf -> } operators, but these facilities allow
-direct access to the internal data, as does handing out pointers to internal parts.
-
-Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
-message sending, thus allowing path-based access under dynamic control of the object
-in question.  However, this does not allow user-defined identifiers or 
-
-ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
-constraints referencing parts of objects, say the vertex of a triangle.   It does not
-expand this path-based access to other domains or make it user-extensible.
 
 
-\subsection{Icon}
+\subsection{URIs in E}
+
+The E language\cite{MillerRobustComposition}  supports URI-Expressions such as
+the  {\bf <file:c:/jabbertest>} or {\bf <http://www.erights.org>}.  However,
+it only supports using them in the reference-aware style and does not integrate 
+ordinary identifiers into the URI mechanism, provide abstraction mechanisms
+for URIs or an extension mechanism. 
+
+
+\subsection{References in Icon}
 
 In the Icon programming language \cite{IconRef} , identifiers (references) can be first class values,
 and there are complex rules for when a reference remains a reference and when
@@ -739,44 +836,76 @@ or behaviors.
 
 
 
-\subsection{Proxies, Composition Filters etc.}
+\subsection{Domain Specific Languages}
 
-Proxies\cite{VanCutsemMiller}, Foote/Johnson, various future/lazy systems, Distributed Smalltalk,
-NeXT/Apple Distributed Objects.  Issues:  ``Note on Distributed Computing'', treating
-remote objects as if they were local and distribution didn't exist.  
+Polymorphic Identifiers are an attempt to achieve at least some of the benefits
+of Domain Specific Languages without many of the costs.  They provide a
+pluggable mechanism that makes it possible to generate variations, subclasses
+in effect, of programming languages, rather than having to create entirely new languages
+from scratch.
 
-Our approach differs in that we handle the difference between remote and local at
-the identifier/reference level, rather than at the object (distributed objects) or 
-message/call level (RPC).  We would argue that the proxies used in distributed
-objects can be regarded as first-class identifiers in our sense, and that the 
-metaprogramming techniques that are typically employed are there to approximate
-an identifier-oblivious style for the remote reference.  However, doing this
-in the ``object space'' mixes user-level and system-level functionality, with
-for example the typical difficulty of controlling the proxy itself when all messages
-are forwarded to the remote object.
+Using a common, yet extensible syntax for identifiers with varying semantics means
+that one set of syntactic tooling suffices and programs have a better chance of
+remaining readable despite the variation in the language.
+
+
+\subsection{Proxies,Mirrors and Mirages}
+
+Smalltalk reflective facilities \cite{reflective-st} have long been used to build
+facilities such as distributed object systems, futures, lazy evaluation and
+transparent storage mechanisms.  One problem with the Smalltalk facilities
+has been that they are defined in an ad-hoc fashion from error handling routines
+and not sufficiently stratified, with meta-level functions
+interfering with base-level functions and vice-versa.  Another problem is that
+most reflective techniques only apply to messages, not to identifiers, making 
+those techniques unavailable.
+
+Mirrors \cite{mirrors} and Mirages \cite{mirages} improve the stratification and
+reflection/intercession capabilities, but are not capable of dealing with pure
+identifiers or of bringing user-defined resource handlers into the language.
+
+The proposed ECMAScript Proxy mechanism \cite{VanCutsemMiller} addresses
+the stratification issues and also integrates some identifier access into the 
+metaprogramming framework, but doesn't allow user-extensible identifiers.
+
+We believe that mechanisms such as remote objects, futures, proxies and the like
+are actually properly modeled not at the object level, but at the identifier/reference
+level, so that a significant part of what is currently considered metaprogramming
+becomes programming at the identifier level.
 
 \subsection{Internet Programming Languages and Systems}
 
-Wheat \cite{wheat}, Web-Machine \cite{webmachine}, Presto, Resource Oriented Programming,
-various specialized systems that export a network file-system.
+The success of the REST architectural style\cite{fielding-rest} on the web has sparked
+systems and languages that try to more directly model and take advantage of that
+style.
 
-\subsection{Unified path-based data access}
+The Wheat language \cite{wheat} embedded an entire programming language
+and system into a web-server, accessing all resources and methods via
+HTTP URLs.  Polymorphic Identifiers allow resources, but these resources
+are not required to use a specific communications mechanism.
 
-User level filesystems like FUSE   \cite{fuse} or the BSD Pass-to-User-Space\cite{puffs} allow
-user-level code to add new filesystems to the Unix kernel, without requiring
-kernel modifications or impacting operating system kernel stability.
 
-This approach has enabled many types of remote resources such as 
-YouTube videos with atttributes and thumbnails or local resources
-such as images with their attributes to be accessed using common
-POSIX file APIs or convenience APIs built on top of them.
+Resource Oriented Computing \cite{roc} goes even further by
+requiring all computation to be expressed through URIs, adding Active URIs
+for computation as shown in Figure~\ref{activeuri}
 
-While such integration is a
 
-However:  OS-level, so mediated via the kernel, so cannot reasonably incorporate
-local, in-memory resources.   Not integrated into programming language.
+\begin{figure}[htbp]
+\begin{center}
+\begin{verbatim}
+active:{base}+{name}@{uri}...
+\end{verbatim}
+\caption{Active URI}
+\label{activeuri}
+\end{center}
+\end{figure}
 
-But:  should be possible to bridge both-ways, would be very cool \ldots
+The {\bf base} is a function name, the {\bf name} an argument name and the
+{\bf uri} an argument URI.
+ While Polymorphic Identifiers allow processing to be
+hidden behind a resource URI, they also allow messaging to be expressed
+as messaging when that is the intent.
+
 
 
 \section{Summary and Outlook}
