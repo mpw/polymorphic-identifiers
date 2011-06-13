@@ -281,7 +281,7 @@ string to an entity.
        stringByAppendingPathComponent:'.bashrc')
 
 \end{verbatim}
-\caption{Cocoa convenience API for accessing file content}
+\caption{Cocoa convenience API for accessing file contents}
 \label{cocoa-file-contents}
 \end{center}
 \end{figure}
@@ -531,35 +531,24 @@ that provides access to Unix environment variables.
 \begin{figure}[htbp]
 \begin{center}
 \begin{verbatim}
-> ref:env:bozo isBound
-0
+> ref:env:bozo isBound  -> 0
 > env:bozo := 'hi'
-> ref:env:bozo isBound
-1
+> ref:env:bozo isBound  -> 1
 \end{verbatim}
-\caption{Checking wether an environment variable is bound to a value}
+\caption{Is environment variable set?}
 \label{isBound}
 \end{center}
 \end{figure}
-
 
 Bindings are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
 meta-data about and perform operations on the file as shown in Figure~\ref{ref-file-dir}.
 
-
-
-\begin{figure}[htbp]
+\begin{figure}[h]
 \begin{center}
 \begin{verbatim}
 > newDir := ref:file:testDir 
-> newDir isBound 
-0
-> newDir mkdir 
-> newDir isBound
-1
-> newDir isDirectory 
-1
+> newDir isDirectory  -> 1
 \end{verbatim}
 \caption{File and directory manipulation}
 \label{ref-file-dir}
@@ -567,6 +556,10 @@ meta-data about and perform operations on the file as shown in Figure~\ref{ref-f
 \end{figure}
 
 
+
+Bindings for remote resources include methods for initiating a transfer, cache-control,
+error-checking and progress monitoring.   Bindings can be passed to user interface
+elements for manipulation of the object referenced.
 
 
 \subsection{Abstraction}
@@ -607,15 +600,30 @@ uriSyntax := rfc:rfc2396.
 \end{figure}
 
 A sequential composition scheme simply searches a list of other schemes
-for a particular identifier.  It is parametrized with a list of schemes and 
-returns 
+for a particular identifier.  It searches its argument schemes sequentially
+for the identifier in question and returns the first match.  Lookup rules for
+identifiers that are usually hard-coded into languages can be expressed
+as a sequential composition scheme, for example:   \{ scheme:local ,
+scheme:ivar \} for Smalltalk (ignoring globals and class
+
 
 
 \section{Implementation}
 
-Polymorphic Identifiers have been implemented as part of Objective-Smalltalk,
-a Smalltalk built on top of the Objective-C runtime, similar to MacRuby \cite{macruby}. 
+Polymorphic Identifiers have been implemented as part of Objective-Smalltalk \cite{objst},
+a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-apple} runtime, 
+in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby}.
 
+Objective-C is an ahead-of-time-compiled, hybrid dynamic object oriented programming language
+that is an extension of C.  The object-oriented extensions to C are closely modeled on
+Smalltalk, with dynamic single-dispatch at runtime, a keyword syntax and classes as
+largely first-class objects.
+
+Objective-Smalltalk objects and classes are Objective-C objects, they are created using
+the same functions and data structures and are indistinguishable at runtime.
+The same goes for Objective-Smalltalk methods, which are also indistinguishable from
+Objective-C methods, making Objective-Smalltalk in a sense a meta-circular language
+that is written in itself, or more precisely written in variants of itself \cite{kleinvm}\cite{squeak}.
 
 
 \section{Discussion}
@@ -682,23 +690,28 @@ app:iChat/statusMessage :=
 
 \section{Related Work}
 
-\subsection{LISP Quoting}
 
-LISP quoting allows references to not be evaluated.
 
 \subsection{E}
 
-The E language\cite{MillerRobustComposition}  adds URL for far references.
+The E language\cite{MillerRobustComposition}  supports URI-Expressions such as
+the following:  {\bf <file:c:/jabbertest> } or {\bf <http://www.erights.org>}.  However,
+it only supports using them in the reference-aware style and does not integrate 
+ordinary identifiers into the URI mechanism, provide abstraction mechanisms
+for URIs or an extension mechanism. 
 
 \subsection{Domain Specific Languages}
 
-\subsection{Key Value Coding, Observing, Binding}
+Polymorphic Identifiers are an attempt to achieve at least some of the benefits
+of Domain Specific Languages without many of the costs.  
 
-\subsection{ThingLab}
 
-ThingLab adds path-based access to the base Smalltalk language in order to support
-constraints referencing parts of objects, say the vertex of a triangle.   It does not
-expand this path-based access to other domains or make it user-extensible.
+\subsection{Phantom XML}
+
+Phantom XML\cite{phantomxml} unifies access to data by treating all data as
+XML trees, allowing queries against this XML representation of the data without
+actually converting it to XML first.  
+
 
 \subsection{Path-based and indirect access in programming languages}
 
@@ -709,6 +722,11 @@ direct access to the internal data, as does handing out pointers to internal par
 Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
 message sending, thus allowing path-based access under dynamic control of the object
 in question.  However, this does not allow user-defined identifiers or 
+
+ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
+constraints referencing parts of objects, say the vertex of a triangle.   It does not
+expand this path-based access to other domains or make it user-extensible.
+
 
 \subsection{Icon}
 
@@ -731,20 +749,20 @@ Our approach differs in that we handle the difference between remote and local a
 the identifier/reference level, rather than at the object (distributed objects) or 
 message/call level (RPC).  We would argue that the proxies used in distributed
 objects can be regarded as first-class identifiers in our sense, and that the 
-metaprogramming techniques that are typically employed are there to go from
-the identifier-aware style to an identifier-oblivious style.  However, doing this
+metaprogramming techniques that are typically employed are there to approximate
+an identifier-oblivious style for the remote reference.  However, doing this
 in the ``object space'' mixes user-level and system-level functionality, with
 for example the typical difficulty of controlling the proxy itself when all messages
 are forwarded to the remote object.
 
 \subsection{Internet Programming Languages and Systems}
 
-Wheat \cite{wheat}, Web-Machine, Presto, Resource Oriented Programming,
+Wheat \cite{wheat}, Web-Machine \cite{webmachine}, Presto, Resource Oriented Programming,
 various specialized systems that export a network file-system.
 
-\subsection{User Level File Systems}
+\subsection{Unified path-based data access}
 
-User level filesystems like FUSE   \cite{fuse} or the BSD  ? \cite{bsdfuse} allow
+User level filesystems like FUSE   \cite{fuse} or the BSD Pass-to-User-Space\cite{puffs} allow
 user-level code to add new filesystems to the Unix kernel, without requiring
 kernel modifications or impacting operating system kernel stability.
 
