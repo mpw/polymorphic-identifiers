@@ -21,7 +21,9 @@
         bookmarksopenlevel=3,
         plainpages=false,
         pdfpagelabels=true]{hyperref}
+\usepackage{listing}
 
+%\lstset{language=C}
 \begin{document}
 
 %\conferenceinfo{WXYZ '05}{date, City.} 
@@ -47,7 +49,7 @@
 \maketitle
 
 \begin{abstract}
-We introduce polymorphic identifiers, a generalization of the monomorphic identifiers found in most
+We introduce polymorphic identifiers, a generalization of the  identifiers found in most
 programming languages today as first class objects, as well as mechanisms for
 resolving those identifiers and binding them into a general purpose programming language.
 These identifiers allow stratified designs clearly separating meta- and base-level constructs
@@ -64,8 +66,10 @@ as well as light-weight domain-specificity with high levels of expressiveness,
 \section{Introduction}
 \epigraph{There are only two hard things in Computer Science:  cache invalidation and naming things} {Phil Karlton}
 
-This is not a paper about cache invalidation.  Mostly.   Rather, we report on an experimental
-technique for expanding our ability to directly name many different things in 
+This is not a paper about cache invalidation.   Rather, we report on an experimental
+technique for expanding our ability to directly name many different 
+entities\footnote{``Entities'' in this context are just ``things'', they are not intended to be identical
+to the entities in entity-relationship modeling} in 
 programming languages using a common and extensible identifier and identifier resolution
 mechanism.
 These polymorphic identifiers are not just user-extensible,
@@ -74,16 +78,15 @@ entities.
 
 Our starting point is a programming model such as that of Smalltalk, where we have objects
 that communicate via messages\cite{Goldberg1983}.   Identifiers are used to identify 
-objects, but are early bound by the compiler and resolved to slots in local contexts, and 
-global, instance-, class- or pool-variables.  Late-binding of names, encapsulation and
-polymorphic behavior can only be achieved with message sends.
+objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
+and polymorphic behavior can only be achieved with message-sends.
 
-We then give various examples both of additional things that one might want to reference 
- apart from objects resident in a single address space  and
-desirable operations on identifiers beyond resolving them to objects at compile time.
+Identifiers that need to point to other entities or used in different ways must be defined
+by the user and cannot be used interchangeably with built in identifiers.  
 
 We believe that the accidental complexity \cite{Brooks87nosilver} introduced by the
-plethora of ad-hoc mechanisms for addressing these desiderata can be reduced 
+plethora of ad-hoc mechanisms for addressing the difference between built in 
+identifiers and user-defined identifiers can be reduced 
 by unifying them using the polymorphic identifiers introduced in this paper.
 
 
@@ -98,16 +101,19 @@ variable named {\bf anObject}, one would have to search the local context for
 a slot named {\bf 'anObject'} and then return the value stored at that slot.
 
 
+\begin{small}
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 (localContext variableNamed:'anObject') value.
 \end{verbatim}
+\end{small}
+\end{center}
 \caption{Lookup of a local variable}
 \label{variable-lookup}
-\end{center}
 \end{figure}
-
+\end{small}
 
 Some  languages actually perform all these steps at runtime, but most 
 have a compiler help with efficiency by converting the names to indexes into
@@ -122,47 +128,58 @@ value that will be obtained by looking up the name in the local context.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 	anObject.
 \end{verbatim}
+\end{small}
 \caption{Identifer-oblivious variable lookup}
 \label{plain-identifier}
 \end{center}
 \end{figure}
 
-This  {\em identifier-oblivious} style shown in Figure~\ref{plain-identifier}, where lookup of the value bound to and
+This  {\em identifier-oblivious} style shown in figure~\ref{plain-identifier}, where lookup of the value bound to and
 identifier is implied, is so familiar that we don't usually think about it, we just
 refer to object using the identifier.
   The 
-alternative {\em identifier-aware} style shown in Figure~\ref{variable-lookup} would get cumbersome quickly.
+alternative {\em identifier-aware} style shown in figure~\ref{variable-lookup} would get cumbersome quickly.
 
 Non-local entities such as sub-parts of constructed objects 
 cannot be referred to symbolically by a single identifier.
 Instead, they must be obtained using computation, a 
 sequence of operations, which in Smalltalk is performed using message sends.
-For example, assuming we have a model of a robot, we might obtain the
-color of the robot's left eye as follows:
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
-	robot head leftEye color.
+	myColor :=robot head leftEye color.
+	 robot head leftEye color: myColor.
 \end{verbatim}
-\caption{Obtaining a reference via chained message sends}
+\end{small}
+\caption{Accessing objects via chained message sends}
 \label{non-local-reference}
 \end{center}
 \end{figure}
 
+figure~\ref{non-local-reference} shows both read and write access to the property
+of a nested object structure using message-sends.  Note how symmetric operations
+(read and write) require a non-symmetric implementation:  for the read, we have an assignment
+from a series of chained messages, for the write we have a slightly different set of 
+chained messages with the last message in the chain taking our desired value
+as an argument.  In order to interact with an entity that should have a single name,
+we need at least two names:  the getter and the setter.
 
-Although we can hide an object reference behind a computational interface, we cannot
-hide a computation behind a object reference interface.
+This asymmetry is related to the fact that although we can hide an object reference 
+behind a computational interface, we cannot
+hide a computation behind a object reference interface, another asymmetry.
 Thus any kind of external API has to be presented through a computational, messaging 
 interface, even if the intention is not computation, but just access to a resource,
   and all information hiding also requires messaging.  This has led languages
-like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as symbolic names for objects, 
-all objects are instead obtained by sending messages to other objects.
+like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as symbolic names for objects, instead there is only messaging and
+all objects are obtained by sending messages to other objects.
 
-On the World Wide Web with its REST architectural model the situation is exactly the reverse: 
+On the World Wide Web with its REST architectural style the situation is exactly the reverse: 
  the interface
 to resources is their identifier, the Uniform Resource Locator (URL).   Wether
 computation happens in providing the resource is a hidden implementation detail
@@ -172,9 +189,11 @@ to the client).
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 http://www.shipper.com/track/12345678
 \end{verbatim}
+\end{small}
 \caption{A Uniform Resource Locator}
 \label{url-example}
 \end{center}
@@ -185,7 +204,7 @@ a package-tracking application that takes a parameter (2 entities),
 one can simply take the view that ``every package has its own 
 web-site'', which is then just one entity referenced by a single,
 parameterless identifier.  This type of encapsulation behind
-a single, parameterless identifier makes bookmarks and single
+a single, parameterless identifier makes bookmarks and single-click,
 browser-based navigation possible.
 
 
@@ -196,36 +215,35 @@ are provided incrementally and dynamically in responses.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 urn:isbn:123123123
 \end{verbatim}
+\end{small}
 \caption{URN}
 \label{urn-example}
 \end{center}
 \end{figure}
 
 Whereas URLs specify an access path, including a network protocol, Uniform 
-Resource Names like the ISBN in Figure~\ref{urn-example} just specify a logical
+Resource Names like the ISBN in figure~\ref{urn-example} just specify a logical
 name, leaving the resolution of that name completely open.  In a sense, URNs
 correspond to interfaces 
 
-Uniform Resource Identifiers are a generalization of both Uniform Resource Locators
-and Uniform Resource Names.  
-
 URIs are a generalization of Uniform Resource Locators, which specify a
-resource by its network location and access path and Uniform Resource Names,
+resource by its protocol, network location and access path and Uniform Resource Names,
 which specify
 a resource by a logical name and leave it to system processes to 
 determine the exact location.  In practice, most URIs are located on
 a continuum with URNs on one end and URLs on the other.
 
-\section{User-level identifiers}
+\section{User-defined identifiers}
 
-
-In addition to the entities that can be referred to directly by the programming language's 
-built-in identifiers, there are many other entities and situations where that is not possible.
-However, entities still need to be addressed, so developers are required
-to construct their own identifiers or references and methods for resolving them to the actual
+Network resources identified by URIs are among the many entities that most
+programming languages cannot refer to directly using identifiers available to the
+language itself.
+However, those entities still need to be addressed, so developers are required
+to construct their own identifiers  and objects as well as methods for resolving them to the actual
 entities.
 
 \subsection{External Resources}
@@ -238,6 +256,7 @@ the current user's ``.bashrc'' file looks as follow:
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
    char fullname[MAXPATHLEN];
    snprintf(fullname,MAXPATHLEN,"%s/.bashrc",
@@ -248,21 +267,23 @@ the current user's ``.bashrc'' file looks as follow:
       close(fd);
    }
 \end{verbatim}
-\caption{Resolving a name in the user's home directory to a file}
+\end{small}
+\caption{Resolving a name to a file in the user's home directory}
 \label{posix-file-resolve}
 \end{center}
 \end{figure}
 
-The string represents a user-level identifier, which is just a plain character
+The string represents a user-defined identifier, which is just a plain character
 string that has no meaning to the programming language and must be 
 manually resolved by the developer in the {\em identifier-aware} style 
 introduced in Section~\ref{identifiers}.  In fact, two different identifiers
-are resolved in Figure~\ref{posix-file-resolve}:  first, the identifier {\bf HOME}
+are resolved in figure~\ref{posix-file-resolve}:  first, the identifier {\bf HOME}
 from the domain of environment variables is needed, which requires calling
 the {\bf getenv()} function to resolve the identifier string to a value.  That result,
-also a string, is then combined with the name of the file in question and passed
+also a string, is then combined with the name of the file in question using generic
+string processing functions and passed
 to the {\bf open()} system call to return an actual file reference.  Boundary conditions
-and error checking have largely been elided.
+and error checking have been ignored to keep the sample manageable.
 
 Convenience APIs can ameliorate the situation somewhat, for example shortening 
 the multiple steps above into a single (slightly verbose) expression and making the
@@ -273,6 +294,7 @@ string to an entity.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
    NSData dataWithContentsOfFile:
      ((NSProcessInfo processInfo
@@ -281,6 +303,7 @@ string to an entity.
        stringByAppendingPathComponent:'.bashrc')
 
 \end{verbatim}
+\end{small}
 \caption{Cocoa convenience API for accessing file contents}
 \label{cocoa-file-contents}
 \end{center}
@@ -296,9 +319,11 @@ Unix shell, including the variable part.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 	cat $HOME/.basrhc
 \end{verbatim}
+\end{small}
 \caption{File contents in a shell}
 \label{sh-file-contents}
 \end{center}
@@ -311,33 +336,38 @@ or wildcard expansion.
 
 
 
-\subsection{Dynamic data structures}
+\subsection{Dynamic data access}
 
 Path-based access is not restricted to external resources, but also
-prevalent when accessing dynamic data structures
+prevalent when code needs to interact generically with dynamic
+or application-specific data.   Two examples of this usage pattern
+ for path-based access are user interfaces and XML processing.
 
- such as an XML DOM (xpath)
+In user interfaces, it is often required for
+a specific user interface item to modify some part of a model object, in our
+example the color of the robots left eye.  In order for the UI element to be
+able to manipulate the part, it needs to be parametrized at run time with
+an identifier that points to that part of a specific base object.   As the built-in
+ identifiers typically are only available at compile-time, developers are
+ once again forced to invent their own user-defined identifiers, which are again 
+ typically string based.  Since accessing objects via strings requires fairly tricky
+ metaobject programming, there is then often pressure to abandon data
+ modeling with objects altogether and just use dictionaries everywhere.
 
-\begin{itemize}
-\item [mpw] more details
-\end{itemize}
-
-\subsection{User Interfaces}
-
-
-
-
-\subsection{Network Resources}
-
+DOM-based XML processors need to provide mechanisms to access parts of
+an XML document, but except for the specific XML-data binding libraries that
+require code-generation, the exact structure of the XML file is not known at 
+compile time and therefore built-in identifiers cannot be used.  Both DOM libraries
+and more sophisticated query processors such as xpath or xquery therefore use
+strings as their user-defined identifiers.
 
 
 \subsection{The Trouble with Strings}
-\label{stringtrouble}
 \epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
+\label{stringtrouble}
 
-
-One aspect that virtually all user-level identifier mechanisms have in common is that they
-are based on string processing.  The use of strings makes user-level identifiers relatively
+One aspect that virtually all user-defined identifier mechanisms have in common is that they
+are based on string processing.  The use of strings makes user-defined identifiers relatively
 close to language identifiers ({\bf \hbox{anObject}} vs {\bf \hbox{'anObject'}}), but brings with it a number of problems in terms of overhead, correctness and safety.
 
 As we saw above, the first problem is that a string is not an identifier, and therefore
@@ -346,7 +376,7 @@ must be passed as an argument to some function or method to actually return
 identifier) or tripling (class/object + message + string ) the number of entities involved to 
 retrieve the desired entity.  
 
-The compiler does not have insight into strings that may be used as user-level 
+The compiler does not have insight into strings that may be used as user-defined 
 identifiers at some point in the future, and therefore cannot determine wether 
 a string-based identifier is correct, or even syntactically well-formed.   The compiler
 and runtime also cannot help with turning the identifier into a more efficient representation
@@ -370,31 +400,35 @@ biggest sources of vulnerabilities on the web.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 u := NSURL alloc
            initWithScheme:'http'
            host:'www.example.org'
            path:'/' 
 \end{verbatim}
+\end{small}
 \caption{URL initialized in an object-oriented fashion}
 \label{url-as-obj}
 \end{center}
 \end{figure}
 
 On the other hand, using non-string types, while increasing safety somewhat,
-obscures intent further by breaking up the identifiers.
+obscures intent even further by breaking up the identifiers.
 It is certainly debatable wether the more object-oriented
-initialization of Figure~\ref{url-as-obj}  has any practical benefits over a
-simple initialization from string as in Figure~\ref{url-as-string}, and in
+initialization of figure~\ref{url-as-obj}  has any practical benefits over a
+simple initialization from string as in figure~\ref{url-as-string}, and in
 the end the components are still strings and must be converted/combined
 into the full URL at runtime.
 
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 u:=NSURL URLWithString:'http://www.example.org'
 \end{verbatim}
+\end{small}
 \caption{URL initialized with a single string}
 \label{url-as-string}
 \end{center}
@@ -409,7 +443,7 @@ u:=NSURL URLWithString:'http://www.example.org'
 
 Syntactically, Polymorphic Identifiers are URIs \cite{rfc3986}, so external resources
 such as web pages or files can be addressed directly in an identifier-oblivious
-style.  The examples in Figure~\ref{first-polymorphic-examples} show a plain
+style.  The examples in figure~\ref{first-polymorphic-examples} show a plain
 identifier that will retrieve the ACM's home page, an assignment that will read
 the contents of a file into a local variable and finally an assignment that will
 write the contents of the local variable to a file, effecting a file copy operation.
@@ -417,15 +451,19 @@ write the contents of the local variable to a file, effecting a file copy operat
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 http://www.acm.org/
 joesBashrc := file:/Users/joe/.bashrc
 file:/Users/mike/.bashrc := joesBashrc
 \end{verbatim}
+\end{small}
 \caption{Polymorphic Identifiers in simple expressions}
 \label{first-polymorphic-examples}
 \end{center}
 \end{figure}
+
+
 
 \subsection{Schemes}
 
@@ -433,19 +471,26 @@ The scheme name part of the identifier symbolically designates the handler objec
 is used to resolve the remainder of the identifier.   A user-extensible class hierarchy of
 scheme resolvers handle 
 return bindings that map to actual objects. The scheme resolvers are made available to the 
-language by associating them with a scheme name in the special {\bf scheme} scheme,
-as shown in Figure~\ref{scheme-scheme-http}. 
+language by associating them with a scheme name in the special {\bf scheme} scheme.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 scheme:http := URLSchemeResolver scheme.
 scheme:file := FileSchemeResolver scheme.
 \end{verbatim}
-\caption{Adding the http scheme}
+\end{small}
+\caption{Adding the http and file schemes}
 \label{scheme-scheme-http}
 \end{center}
 \end{figure}
+
+figure~\ref{scheme-scheme-http} shows the binding of the {\bf http} and {\bf scheme}
+handlers to actual resolvers.  It is possible to bind other handlers to those scheme
+names, for example an {\bf http} handler that implements a multi-level caching scheme
+or a {\bf file} scheme served from memory for testing purposes.
+
 
 The scheme scheme can also be queried,
 so the expression {\bf scheme:http} returns the currently installed http handler, and 
@@ -454,12 +499,14 @@ be listed.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 scheme:scheme
     file, ftp, default, var, bundle, defaults, 
     sel, mainbundle, app, scheme, http,
     env, ref, class,  https
 \end{verbatim}
+\end{small}
 \caption{List of schemes via scheme:scheme}
 \label{scheme-scheme}
 \end{center}
@@ -467,24 +514,58 @@ scheme:scheme
 
 \subsection{In-memory access}
 
-The {\bf var} scheme refers to in-memory variables, so {\bf var:anObject} references the
-local variable {\bf anObject}.   Compound paths can be given and are resolved in
-cooperation with the object, usually by sending unary messages.
 
-The {\bf default} scheme 
-is a special scheme that is substituted when a scheme is not otherwise provided.
-With the {\bf default} scheme set to the {\bf var} scheme, the {\bf var:} can be 
-dropped and we can refer to the local {\bf anObject} variable just by its name.
+\epigraph{Find the hardest and most important things you need to do,
+solve them, and then find ways to get everything else out of them}{Alan Kay}
+
+So far, we have simply added file and web access via URLs to a 
+Smalltalk-like programming language.  However it turns out that we can actually generalize
+this approach to all identifier usage, including normal variable access, using
+two additional schemes:  the {\bf var} scheme and the {\bf default} scheme.
+
+
+The {\bf var} scheme refers to in-memory variables, so the expression
+ {\bf var:anObject} references the
+local variable {\bf anObject}.   Compound paths can be given and are resolved in
+cooperation with the object.
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{small}
+\begin{verbatim}
+myColor := var:robot/head/leftEye/color.
+var:robot/head/leftEye/color := myColor.
+\end{verbatim}
+\end{small}
+\caption{In-memory access path}
+\label{in-memory-path}
+\end{center}
+\end{figure}
+
+figure~\ref{in-memory-path} recasts the structured access from 
+figure~\ref{non-local-reference} using polymorphic identifiers.  Unlike the variant
+with chained message-send, the operations are symmetric in the case of polymorphic identifiers.
+
+
+The {\bf default} scheme is not an actual scheme per-se, but rather a special slot
+that is used in resolving identifiers encountered without a scheme-specifier.
+In that case, the scheme registered under the {\bf default} scheme is used
+instead, which when combined with the {\bf var} scheme that is the default
+for the {\bf default} scheme gives the semantics for a naked identifier (e.g. {\bf robot}).
+
+
 However, the default scheme can be set to some other scheme if that is more
-convenient for the task at hand, as shown in Figure~\ref{file-as-default-scheme},
+convenient for the task at hand, as shown in figure~\ref{file-as-default-scheme},
 where a file copy is performed after the default scheme is set to file.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 scheme:default := scheme:file
 myBashRc := .basrhc
 \end{verbatim}
+\end{small}
 \caption{File copy with file: as default scheme}
 \label{file-as-default-scheme}
 \end{center}
@@ -497,7 +578,7 @@ compound paths, so for compound paths a full URI with scheme must be used.
 
 \subsection{First class references}
 
-The bindings returned by scheme-resolvers are usually ephemeral, used just 
+The bindings that are returned by scheme-resolvers are usually ephemeral, used just 
 to get to the value pointed to by the identifier, either reading or writing it.  This
 makes it possible to program with arbitrary and user-defined identifiers in
 an identifier-oblivious style.  It also means that for sufficiently simple scheme-resolvers,
@@ -508,10 +589,15 @@ desirable to use the identifier-aware style.  In order to do this, the language
 must provide access to the bindings used in resolving the identifier.
 
 The {\bf ref} scheme prevents evaluation of the binding and thus allows access
-to the binding itself.  
+to the binding itself.  figure~\ref{ref-binding} illustrates the syntax and semantics:
+first a variable {\bf a} is defined and bound to a value 42, then we obtain a reference {\bf b} to
+the identifier for the first variable {\bf a}.  We can now manipulate variable {\bf a} 
+in a generic way through the reference we have obtained in variable {\bf b} without
+having a hard-coded reference. 
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 a := 42
 b := ref:var:a.
@@ -519,22 +605,32 @@ b value  -> 42
 b bindValue:2
 a -> 2
 \end{verbatim}
+\end{small}
 \caption{Accessing a variable via its binding}
 \label{ref-binding}
 \end{center}
 \end{figure}
 
+This generic access to variables (or more generally: resources) can be used just as well
+with complex identifiers that have multi-element paths.  So for example a UI element
+could get the reference {\bf ref:var:robot/head/leftEye/color} and would then be
+able to manipulate the eye-color of the left eye of that particular robot safely using
+the message {\bf value} and {\bf setValue:}
+without having to know about or traverse the structure in question.
+
 Common operations on bindings are retrieving, binding and unbinding a value and testing 
-wether a binding has a value, as shown in Figure~\ref{isBound} for the {\bf env} scheme
+wether a binding has a value, as shown in figure~\ref{isBound} for the {\bf env} scheme
 that provides access to Unix environment variables.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 > ref:env:bozo isBound  -> 0
 > env:bozo := 'hi'
 > ref:env:bozo isBound  -> 1
 \end{verbatim}
+\end{small}
 \caption{Is environment variable set?}
 \label{isBound}
 \end{center}
@@ -542,14 +638,16 @@ that provides access to Unix environment variables.
 
 Bindings are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
-meta-data about and perform operations on the file as shown in Figure~\ref{ref-file-dir}.
+meta-data about and perform operations on the file as shown in figure~\ref{ref-file-dir}.
 
 \begin{figure}[h]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 > newDir := ref:file:testDir 
 > newDir isDirectory  -> 1
 \end{verbatim}
+\end{small}
 \caption{File and directory manipulation}
 \label{ref-file-dir}
 \end{center}
@@ -562,49 +660,82 @@ error-checking and progress monitoring.   Bindings can be passed to user interfa
 elements for manipulation of the object referenced.
 
 
+
 \subsection{Abstraction}
 
 With richer identifiers, it makes sense to allow abstractions to be built with these identifiers.
 One example is parametrization, with an identifier having parameters that are evaluated
-at runtime, as seen in Figure~\ref{bashrc-pi} that retrieves the current user's {\bf .bashrc} 
-and is equivalent to Figures~\ref{posix-file-resolve}, \ref{cocoa-file-contents} and 
+at runtime.  Curly brackets \{\} denote a section of the path that should be evaluated and
+the return value used as part of the access path.
+
+figure~\ref{bashrc-pi} shows an example where the current user's home directory
+is retrieved from the Unix environment using the {\bf env} scheme and the resulting
+path is then used to obtain the current user's  {\bf .bashrc}.
+It is equivalent to Figures~\ref{posix-file-resolve}, \ref{cocoa-file-contents} and 
 \ref{sh-file-contents}.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 file:{env:HOME}/.bashrc
 \end{verbatim}
+\end{small}
 \caption{Parametrized Identifier}
 \label{bashrc-pi}
 \end{center}
 \end{figure}
 
 Another example is the relative scheme resolver, which takes a base-binding
-and evaluates its references relative to that base.  Figure~\ref{rfc-scheme} shows
+and evaluates its references relative to that base.  figure~\ref{rfc-scheme} shows
 how to use a relative scheme resolver to build a scheme that can directly
 reference Internet Engineering Task Force Request For Comments (IETF RFCs).
 The end effect is that we can hide the actual location and access method for
-the IETF RFCs behind a scheme so we can access those RFCs directly.
+the IETF RFCs behind a scheme so we can access those RFCs directly and
+creating a URI scheme that is close to a URN.
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 base := ref:http://datatracker.ietf.org/doc/.
 scheme:rfc := RelScheme schemeWithBase:base.
 uriSyntax := rfc:rfc2396.
 \end{verbatim}
+\end{small}
 \caption{Retrieving RFC 2396 (URI Syntax) via custom rfc: scheme}
 \label{rfc-scheme}
 \end{center}
 \end{figure}
+
+Different abstraction mechanisms can be combined, for example yielding
+a scheme that represents file in the current user's home directory, shown
+in figure~\ref{home-scheme}.
+
+
+\begin{figure}[htbp]
+\begin{center}
+\begin{small}
+\begin{verbatim}
+base := ref:file:{env:HOME}.
+scheme:home := RelScheme schemeWithBase:base.
+home:.bashrc.
+\end{verbatim}
+\end{small}
+\caption{Accessing .bashrc via custom home: scheme}
+\label{home-scheme}
+\end{center}
+\end{figure}
+
+
 
 A sequential composition scheme simply searches a list of other schemes
 for a particular identifier.  It searches its argument schemes sequentially
 for the identifier in question and returns the first match.  Lookup rules for
 identifiers that are usually hard-coded into languages can be expressed
 as a sequential composition scheme, for example:   \{ scheme:local ,
-scheme:ivar \} for Smalltalk (ignoring globals and class
+scheme:ivar , scheme:classvar , scheme:poolvar , scheme:global \} for Smalltalk 
+(ignoring the capitalization rules for a second).
 
 
 
@@ -625,17 +756,19 @@ The same goes for Objective-Smalltalk methods, which are also indistinguishable 
 Objective-C methods, making Objective-Smalltalk in a sense a meta-circular language
 that is written in itself, or more precisely written in variants of itself \cite{kleinvm}\cite{squeak}.
 
-Figures~\ref{get-env}-\ref{setvalue-env} show the implementation of a simple scheme,
-the env-scheme that provides access to Unix environment variables.  Figure~\ref{get-env}
+Figures~\ref{get-env}-\ref{hasValue-env} show the implementation of a simple scheme,
+the env-scheme that provides access to Unix environment variables.  While this scheme
+is actually string-based, that fact is hidden and the strings are not exposed to the user.
+figure~\ref{get-env}
 shows the {\bf bindingForName:inContext:} method that is the main access point for
 converting from an identifier to a binding.  In this case, a generic binding object is returned
 that simply stores the name of the identifier and lets the scheme that created it resolve
 access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
 
-
-
+     
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 -(const char*)cstringValueOfBinding:aBinding
 {
@@ -657,6 +790,7 @@ access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
   }
 }
 \end{verbatim}
+\end{small}
 \caption{Basic lookup in env-scheme}
 \label{get-env}
 \end{center}
@@ -669,6 +803,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 -(void)setValue:val forBinding:binding
 {
@@ -680,6 +815,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
   }
 }
 \end{verbatim}
+\end{small}
 \caption{Set value in env-scheme}
 \label{setvalue-env}
 \end{center}
@@ -687,12 +823,14 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 -(BOOL)isBoundBinding:aBinding
 {
   return [self cstringValueOfBinding:aBinding] != NULL;
 }
 \end{verbatim}
+\end{small}
 \caption{Checking for presence of value in env-scheme}
 \label{hasValue-env}
 \end{center}
@@ -700,32 +838,19 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 
 
-\section{Discussion}
-
-
-
-\begin{figure}[htbp]
-\begin{center}
-\begin{verbatim}
-base := ref:file:{env:HOME}.
-scheme:home := RelScheme schemeWithBase:base.
-home:.bashrc.
-\end{verbatim}
-\caption{Accessing .bashrc via custom home: scheme}
-\label{rfc-scheme}
-\end{center}
-\end{figure}
 
 
 
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
  host := 'citeseerx.ist.psu.edu'.
  viewCiteSeer:=ref:http://{host}/viewdoc/summary
  viewCiteSeer getWithArgs doi:'10.1.1.41.7628'
 \end{verbatim}
+\end{small}
 \caption{URL arguments via reference and higher order message}
 \label{url-args}
 \end{center}
@@ -734,8 +859,39 @@ home:.bashrc.
 
 
 
+\section{Related Work}
+
+There has been a lot of work on extensible languages, 
+
+\subsection{Path-based access in languages}
+
+Programming languages such as C, C++ or Pascal have facilities for composite
+identifiers, for example using the dot or {\bf -> } operators in C, but these facilities allow
+direct access to the internal data, without any ability of the structure in question to 
+mediate.  The same thing goes for passing a pointer to a substructure:  while it
+does give a single entity that can be used to access a sub-part of a structure, it
+does so without any access controls.
+
+Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
+message sending, thus allowing path-based access under dynamic control of the object
+in question, but without having first-class references or the ability to access other
+types of resources using a unified mechanism.
+
+ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
+constraints referencing parts of objects, say the vertex of a triangle, and these
+references do exist as first class objects that can be passed to other objects.
+   It does not
+expand this path-based access to other domains or make it user-extensible.
+
+AppleScript\cite{applescript-hopl3} exposes a program's object model via
+phrases that correspond to access path.  figure~\ref{AppleScript} shows 
+how to access the title of the currently playing iTunes track and set this
+as the current iChat status message.
+
+
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 tell application "iTunes"
   set trackname to name of current track
@@ -744,44 +900,29 @@ tell application "iChat"
   set status message to trackname
 end tell
 \end{verbatim}
+\end{small}
 \caption{Using AppleScript to set chat status from track name}
 \label{AppleScript}
 \end{center}
 \end{figure}
 
+With polymorphic identifiers, the same operation can be expressed
+much more concisely as a simple assignment between two URIs,
+as shown in figure~\ref{NonAppleScript}
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
-app:iChat/statusMessage :=
-                app:iTunes/currentTrack/name
+app:iChat/statusMessage := app:iTunes/currentTrack/name
 \end{verbatim}
+\end{small}
 \caption{Access to applications via polymorphic identifiers}
 \label{NonAppleScript}
 \end{center}
 \end{figure}
 
 
-\section{Related Work}
-
-
-\subsection{Path-based access in languages}
-
-Programming languages such as C, C++ or Pascal have facilities for composite
-identifiers, for example using the dot or {\bf -> } operators, but these facilities allow
-direct access to the internal data, without any ability of the structure in question to 
-mediate, as does handing out pointers to internal parts.
-
-Properties in C\# and Objective-C 2.0 allow a variable-access interface to be backed by 
-message sending, thus allowing path-based access under dynamic control of the object
-in question, but without having first-class references or the ability to access other
-types of resources using the same mechanism.
-
-ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
-constraints referencing parts of objects, say the vertex of a triangle, and these
-references do exist as first class objects that can be passed to other objects.
-   It does not
-expand this path-based access to other domains or make it user-extensible.
 
 \subsection{Unified path-based access mechanisms}
 
@@ -818,10 +959,11 @@ actually converting it to XML first.
 
 \subsection{URIs in E}
 
-The E language\cite{MillerRobustComposition}  supports URI-Expressions such as
-the  {\bf <file:c:/jabbertest>} or {\bf <http://www.erights.org>}.  However,
-it only supports using them in the reference-aware style and does not integrate 
-ordinary identifiers into the URI mechanism, provide abstraction mechanisms
+The E language\cite{MillerRobustComposition}  supports URI-Expressions as a
+direct language feature.  Example include access to files
+using file URI  {\bf <file:c:/jabbertest>} or web resources using HTTP {\bf <http://www.erights.org>}.  However,
+E only supports using these URI expressions in the reference-aware style and does not integrate 
+ordinary identifiers into the URI mechanism, provide abstraction facilities 
 for URIs or an extension mechanism. 
 
 
@@ -838,16 +980,16 @@ or behaviors.
 
 \subsection{Domain Specific Languages}
 
-Polymorphic Identifiers are an attempt to achieve at least some of the benefits
-of Domain Specific Languages without many of the costs.  They provide a
-pluggable mechanism that makes it possible to generate variations, subclasses
-in effect, of programming languages, rather than having to create entirely new languages
-from scratch.
+Polymorphic identifiers are similar to Embedded Domain Specific Languages\cite{edsl}
+in that they allow domain-specific language elements to be added to a language, rather
+than having to create a completely new language with an external DSL or attempt to 
+achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
 
-Using a common, yet extensible syntax for identifiers with varying semantics means
-that one set of syntactic tooling suffices and programs have a better chance of
-remaining readable despite the variation in the language.
-
+Like polymorphic embedding of DSLs \cite{polydsl}, polymorphic identifiers allow
+a single syntax to be used with multiple, pluggable semantic interpretations permitting
+composition of functionality\cite{embeddeddsl}.  However, polymorphic identifiers
+are applicable to general purpose programming languages, not jus DSLs, while
+at the same time restricting their focus to just the identifiers used.
 
 \subsection{Proxies,Mirrors and Mirages}
 
@@ -871,7 +1013,7 @@ metaprogramming framework, but doesn't allow user-extensible identifiers.
 We believe that mechanisms such as remote objects, futures, proxies and the like
 are actually properly modeled not at the object level, but at the identifier/reference
 level, so that a significant part of what is currently considered metaprogramming
-becomes programming at the identifier level.
+can be considered programming at the identifier level.
 
 \subsection{Internet Programming Languages and Systems}
 
@@ -887,14 +1029,16 @@ are not required to use a specific communications mechanism.
 
 Resource Oriented Computing \cite{roc} goes even further by
 requiring all computation to be expressed through URIs, adding Active URIs
-for computation as shown in Figure~\ref{activeuri}
+for computation as shown in figure~\ref{activeuri}.   
 
 
 \begin{figure}[htbp]
 \begin{center}
+\begin{small}
 \begin{verbatim}
 active:{base}+{name}@{uri}...
 \end{verbatim}
+\end{small}
 \caption{Active URI}
 \label{activeuri}
 \end{center}
@@ -910,9 +1054,21 @@ as messaging when that is the intent.
 
 \section{Summary and Outlook}
 
-Introduced user-extensible identifiers based on URL syntax and 
-integrated them as a fundamental part of a programming language
-as the sole identifier lookup/evaluation system.
+We examined both built-in and user-defined identifiers in programming languages 
+and separated their usage patterns into the {\em identifier-oblivious} style where
+the identifier is used by itself to denote its bound value and the 
+the {\bf identifier-aware} style where the identifier itself is used as a first class value
+and its value can only be accessed indirectly.
+
+While each style is appropriate in different usage-scenarios, current languages 
+tie the usage style to wether the identifier is built-in or user-defined.  Polymorphic
+identifiers remove the distinction between user-defined and built-in identifiers by having
+a single type of user-extensible identifier that can be used in either identifier-oblivious
+or identifier-aware style.
+
+With a user-extensible identifier architecture, it becomes possible to add abstraction
+and information-hiding capabilities to identifiers and expand the use of REST-style
+programming beyond just network and web environments.
 
 
 
