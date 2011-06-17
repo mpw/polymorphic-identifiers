@@ -799,8 +799,6 @@ access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
 In this case, the name of the identifier is simply passed to the POSIX {\bf getenv()} function.
 Setting the value is handled in an analog fashion using the {\bf setenv()} function.
 
-
-
 \begin{figure}[htbp]
 \begin{center}
 \begin{small}
@@ -861,7 +859,8 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 \section{Related Work}
 
-There has been a lot of work on extensible languages, 
+There has been a lot of work on extensible languages, but very little of that work 
+has focused on identifiers.  
 
 \subsection{Path-based access in languages}
 
@@ -884,7 +883,7 @@ references do exist as first class objects that can be passed to other objects.
 expand this path-based access to other domains or make it user-extensible.
 
 AppleScript\cite{applescript-hopl3} exposes a program's object model via
-phrases that correspond to access path.  figure~\ref{AppleScript} shows 
+phrases that correspond to access path.  Figure~\ref{AppleScript} shows 
 how to access the title of the currently playing iTunes track and set this
 as the current iChat status message.
 
@@ -983,7 +982,10 @@ or behaviors.
 Polymorphic identifiers are similar to Embedded Domain Specific Languages\cite{edsl}
 in that they allow domain-specific language elements to be added to a language, rather
 than having to create a completely new language with an external DSL or attempt to 
-achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
+achieve the desired effect with an internal DSL\cite{fowlerdsl}.   Figure~\ref{bashrc-pi} shows
+how a general purpose programming language augmented with polymorphic
+identifiers can achieve code densities comparable to a DSL such as the Unix
+shell code in figure~\ref{sh-file-contents}.
 
 Like polymorphic embedding of DSLs \cite{polydsl}, polymorphic identifiers allow
 a single syntax to be used with multiple, pluggable semantic interpretations permitting
