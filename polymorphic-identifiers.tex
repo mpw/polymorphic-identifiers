@@ -71,7 +71,7 @@ Polymorphic identifiers allow stratified designs clearly separating meta- and ba
 as well as light-weight domain-specificity with high levels of expressiveness.
 \end{abstract}
 
-\category{H.4}{Information Systems Applications}{Miscellaneous}
+\category{D.3.3}{Programming Languages}{Language Constructs and Features}
 
 \terms{language, design}
 \keywords{polymorphic identifiers} % NOT required for Proceedings
@@ -99,6 +99,9 @@ that communicate via messages\cite{Goldberg1983}.   Identifiers are used to iden
 objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
 and polymorphic behavior can only be achieved with message-sends.
 
+
+
+
 Identifiers that need to point to other entities or used in different ways must be defined
 by the user and cannot be used interchangeably with built in identifiers.  
 
@@ -108,11 +111,21 @@ plethora of ad-hoc mechanisms for addressing the difference between built-in
 and user-defined identifiers can be reduced 
 by unifying them using our \emph{polymorphic identifiers} presented in this paper.
 
+The contributions of this paper are (1) a classification of identifier usage styles, {\em oblivious}
+and {\em aware}, which
+are usually tightly coupled to identifier types, built-in and user-defined respectively.
+(2) A new, URI-based identifier type
+that unifies identifier types and eliminates the coupling to usage styles. (3) Mechanisms
+that allow new identifier-based abstractions to be created.
+
+
 The remainder of this paper is organized as follows: 
 Section~\ref{identifiers} gives an overview on common identifier schemes.
 Section~\ref{user-defined-identifiers} describes the use and shortcomings of user-defined identifiers.
 In Section~\ref{polymorphic-identifiers} we present \emph{polymorphic identifiers} and briefly describe their implementation in Section~\ref{implementation}.
 Section~\ref{related-work} discusses related work and Section~\ref{summary-and-outlook} concludes our paper and lays out ideas for future work.
+
+
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
