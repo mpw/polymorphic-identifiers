@@ -56,19 +56,16 @@
 \alignauthor Marcel Weiher\\
        \affaddr{metaobject ltd.}\\
        \email{marcel@metaobject.com}
-\alignauthor Robert Hirschfeld\\
-       \affaddr{Hasso-Plattner-Institute}\\
-       \email{hirschfeld@hpi.uni-potsdam.de}
 }
 
 \maketitle
 
 \begin{abstract}
-We introduce polymorphic identifiers as a generalization of identifiers found in most
-programming languages today as first class objects and present mechanisms for
-resolving these identifiers and binding them into a general purpose programming language.
-Polymorphic identifiers allow stratified designs clearly separating meta- and base-level constructs
-as well as light-weight domain-specificity with high levels of expressiveness.
+We present an experimental technique for replacing built-in identifier lookup mechanisms
+of programming languages with a method for allowing user-defined identifier lookup schemes
+to be bound into a base language as first class entities.  
+
+
 \end{abstract}
 
 \category{D.3.3}{Programming Languages}{Language Constructs and Features}
@@ -100,8 +97,6 @@ objects, but are early bound by the compiler.  Late-binding of names, encapsulat
 and polymorphic behavior can only be achieved with message-sends.
 
 
-
-
 Identifiers that need to point to other entities or used in different ways must be defined
 by the user and cannot be used interchangeably with built in identifiers.  
 
@@ -120,6 +115,7 @@ that allow new identifier-based abstractions to be created.
 
 
 The remainder of this paper is organized as follows: 
+Section~\ref{background}  shows how we got to thinking about identifiers.
 Section~\ref{identifiers} gives an overview on common identifier schemes.
 Section~\ref{user-defined-identifiers} describes the use and shortcomings of user-defined identifiers.
 In Section~\ref{polymorphic-identifiers} we present \emph{polymorphic identifiers} and briefly describe their implementation in Section~\ref{implementation}.
@@ -128,6 +124,17 @@ Section~\ref{related-work} discusses related work and Section~\ref{summary-and-o
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
+
+\section{Background and Motivation}
+\label{background}
+
+\begin{itemize}
+\item take the three/four ideas from my notebook
+\item In architecture and in languages you
+\end{itemize} 
+
+
+
 
 \section{Identifiers}
 \label{identifiers}
@@ -231,7 +238,7 @@ hide a computation behind a object reference interface, another asymmetry.
 Thus any kind of external API has to be presented through a computational, messaging 
 interface, even if the intention is not computation, but just access to a resource,
   and all information hiding also requires messaging.  This has led languages
-like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as symbolic names for objects. Instead there is only messaging and
+like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as direct symbolic names for objects. Instead there is only messaging and
 all objects are obtained by sending messages to other objects.
 
 On the World Wide Web with its REST architectural style the situation is exactly the inverse: 
