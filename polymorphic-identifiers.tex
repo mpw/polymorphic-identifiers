@@ -671,6 +671,7 @@ what is usually considered I/O, network and filesystem access.
 
 
 \subsubsection{External resources}
+\label{externalResources}
 
 The list of default scheme-handlers in listing~\ref{scheme-scheme} contains a few familiar URI schemes:
 {\tt http} and {\tt https}, {\tt ftp}, {\tt file}.   These behave in the expected way:   referencing them in an expression will
@@ -680,7 +681,7 @@ an assignment statement will perform an HTTP or FTP PUT request or write to a fi
 
 
 \subsubsection{In-memory access}
-
+\label{inmemory}
 
 So far, we have simply added file and Web-access via URLs to a 
 Smalltalk-like programming language.  However it turns out that we can actually generalize
@@ -746,6 +747,104 @@ Another is a cache scheme, which has two schemes as its arguments,
 the base and the cache.  When accessed, the cache scheme first
 checks the scheme that was designated as its cache.  If the resource
 is found there, it is returned.   If the resource is not found in the cache
+it is retrieved from the base scheme and placed in the cache in addition
+to being returned.
+
+Using the http- and file-schemes from section~\ref{externalResources}, the
+{\tt SiteMap} from section~\ref{inmemory} and the cache and
+relative schemes defined here, we can create the 
+caching behavior of a typical http stack just by composing
+pre-existing schemes, as shown in figure~\ref{http-cached}.
+
+
+\begin{figure}[htbp]
+\caption{A caching http stack made from composed schemes}
+\label{http-cached}
+\begin{center}
+\includegraphics[scale=0.55,page=1]{cached-http.pdf}
+\end{center}
+\end{figure}
+
+The code to implement this composed, caching http scheme is not all 
+that different from the diagram.  It is shown in listing~\ref{http-composed-listing}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=http-composed-listing,caption=Code for caching http stack.]
+rawhttp := scheme:http.
+tempref := ref:file/tmp/ asScheme.
+diskCache := CacheScheme cacheWithScheme: tempref.
+memoryCache := CacheScheme memoryCache.
+scheme:http := 
+
+ rawhttp -> diskCache -> memoryCache.
+\end{lstlisting}
+\end{figure}
+
+The {\tt ->} connector composes components by their default input
+and output ports.
+
+The cache-scheme is really just a special case of a binary composite scheme,
+which can be also be used to implement copy-on-write behavior similar to
+VPRI's world concept\cite{vpriworlds}.
+
+A {\em filter-scheme} applies custom processing to the identifiers going to
+its source scheme and the data flowing in and out.  A special case of the 
+filter scheme is the mime-mapper.  It turns serialized data obtained from
+external resource schemes such as {\tt file} or {\tt http} into domain objects
+using blocks keyed by mime-type.  
+
+\begin{figure}[htbp]
+\caption{Adding conversion to the caching http-stack}
+\label{http-cached-converted}
+\begin{center}
+\includegraphics[scale=0.55,page=1]{cached-and-mapped-http.pdf}
+\end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Caching and converting.]
+rawhttp := scheme:http.
+tempref := ref:file/tmp/ asScheme.
+diskCache := CacheScheme cacheWithScheme: tempref.
+memoryCache := CacheScheme memoryCache.
+mapper := MIMEMapper defaultMapper.
+scheme:http := 
+
+ rawhttp -> diskCache -> memoryCache -> mapper.
+\end{lstlisting}
+\end{figure}
+
+
+With the mime-type mapper in place, it might make more sense to
+cache the deserialized representation in memory rather than
+the raw bytes.  This change in caching strategy only requires
+the minimal change in the configuration of the composed http-scheme
+shown in figure~\ref{http-converted-cached}.
+
+\begin{figure}[htbp]
+\caption{Caching the converted object}
+\label{http-converted-cached}
+\begin{center}
+\includegraphics[scale=0.55,page=1]{mapped-and-cached-http.pdf}
+\end{center}
+\end{figure}
+
+Listing~\ref{http-converted-cached-listing} again closely follows the
+diagram in figure~\ref{http-converted-cached}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=http-converted-cached-listing,caption=Converting and caching.]
+rawhttp := scheme:http.
+tempref := ref:file/tmp/ asScheme.
+diskCache := CacheScheme cacheWithScheme: tempref.
+memoryCache := CacheScheme memoryCache.
+mapper := MIMEMapper defaultMapper.
+scheme:http := 
+
+ rawhttp -> diskCache -> mapper -> memoryCache.
+\end{lstlisting}
+\end{figure}
+
 
 \subsection{Default scheme}
 
