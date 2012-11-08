@@ -84,15 +84,22 @@
 \alignauthor Marcel Weiher\\
        \affaddr{metaobject ltd.}\\
        \email{marcel@metaobject.com}
+\alignauthor Robert Hirschfeld\\
+       \affaddr{Hasso Plattner Institut}\\
+       \email{}
 }
 
 \maketitle
 
 \begin{abstract}
-We present an experimental technique for replacing built-in identifier lookup mechanisms
-of programming languages with a method for allowing user-defined identifier lookup schemes
-to be bound into a base language as first class entities.  
 
+In OOP, we are used to the dynamism of polymorphism when applying messages (verbs) to objects (nouns).
+However, obtaining these objects via identifiers is usually static and monomorphic, with the semantics
+and storage mechanism not just fixed but hard-wired into compilers and VMs.  With {\em polymorphic identifiers}
+we propose applying the same principle of polymorphism and dynamic behavior to identifiers, 
+replacing the built-in, static identifiers and lookup mechanisms with a unified, dynamic and extensible mechanism
+for interacting with resources, be they local variables on the call stack or documents residing on a remote
+server.
 
 \end{abstract}
 
@@ -498,7 +505,7 @@ that would leave just the strings, leading to the incorrect factoring in Listing
 \begin{lstlisting}[style=L,label=urls-factored-ideally,caption=Ideal but incorrect factoring]
 d1 :='http://www.example.org'.
 d2 :='http://www.metaobject.com'.
-d3 :=' file://tmp/testfile.txt'.
+d3 :='file://tmp/testfile.txt'.
 \end{lstlisting}
 \end{figure}
 
@@ -517,6 +524,8 @@ slightly and we will need some extra infrastructure to make it all possible.
 \section{Polymorphic Identifiers}
 \label{polymorphic-identifiers}
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
+
+\mpw{Beginning needs to be standalone, so reader can start here}
 
 With Polymorphic Identifiers, the ideal but incorrect factoring of Listing~\ref{urls-factored-ideally}
 can be converted into a correct factoring of Listing~\ref{several-pis} by leaving out the quotation marks.
@@ -537,11 +546,14 @@ Syntactically, \emph{polymorphic identifiers} are Universal Resouce Identifiers 
 The choice of URI syntax was pragmatic:
 they already exist, most people are familiar with them, they are widely used
 and come close enough to the universality claimed by their name as to make no difference.
+\mpw{No difference...expand a little}
 
 In fact, one way of regarding polymorphic identifiers is that they add direct language support
 for URIs to a language.  Although that view may be initially helpful, it is misleading in
 the end, because URIs are generally only used to specify resources outside of a process,
 whereas polymorphic identifiers unify and generalize both process-internal and -external identifiers.
+\mpw{Less of an apology}
+
 
 The unification means that both external and internal resources can be addressed in either
 identifier-oblivious or identifier-aware styles, the arbitrary distinction demonstrated in
@@ -556,33 +568,34 @@ the previous sections is removed.
 \end{lstlisting}
 \end{figure}
 
-
 Since polymorphic identifiers completely replace standard identifiers, they can be used
 in arbitrary expressions the same way one would expect of any other identifier.  
 Listing~\ref{first-polymorphic-examples} shows polymorphic identifiers used 
 standalone as a network access, in assignment statements that read or write disk files,
 and as an argument in a message expression.
 
-
 \begin{figure}[htbp]
-\caption{Components of the PI system}
 \label{scheme-eval}
 \begin{center}
 \includegraphics[scale=0.45,page=1]{scheme-evaluation.pdf}
+\caption{Components of the PI system}
 \end{center}
 \end{figure}
 
 Figure~\ref{scheme-eval} shows the components of the PI system:  the polymorphic
 identifiers themselves, the scheme-handlers which evaluate PIs and the references
-which mediate actual access to the resources.
+which mediate actual access to the resources.  Evaluation is a 4 step process:
 
-In this case, the scheme part of the
-polymorphic identifier selects the {\tt http} scheme-handler, which evaluates the {\em scheme-specific}
-part of the URI ({\tt //www.ietf.org/rfcs/1384.txt} and returns a reference, in this case a 
-web-reference.   The web-reference then uses an http client library to interact with the
-actual web-server using GET/PUT requests.
+\begin{enumerate}
+\item a character sequence is turned into  polymorphic identifier,
+\item the scheme part of the polymorphic handler is used to select a scheme handler, in this case the {\tt http} handler,
+\item the scheme handler evaluates the {\em scheme-specific} part of the polymorphic identifier ({\tt //www.ietf.org/rfcs/1384.txt})
+	 and returns a reference, in this case a web-reference,
+\item this (web-)reference mediates access to the actual resource, in this case translating requests to store or retrieve the 
+	resource into HTTP GET or PUT requests via an http client library.
+\end{enumerate}
 
-The three steps can happen at compile- or run-time and can be partially completed.
+These four steps can happen at compile- or run-time and can be partially completed.
 A reference to a local stack variable, for example, will typically have none of the
 three components visible at run time, with all that remains being optimized 
 machine code to directly access the resource (the stack variable).
@@ -597,6 +610,7 @@ Schemes are the main point of variability in the PI system
 and broadly fall into two categories:   {\em primitive schemes}(\ref{primitiveSchemes})
 directly encapsulate access to some sort of resource, while {\em composite schemes} 
 take other schemes as arguments and modify their behavior.
+
 
 Users can define their own schemes and add that 
 to the system, either by writing
@@ -653,7 +667,6 @@ scheme-resolver with the following schemes: (
     scheme,
     http,
     env,
-    ref,
     class,
     https
 )
@@ -668,7 +681,7 @@ mediate access to the resource in question.  Primitive schemes
 subsume both what is normally considered variable access and 
 what is usually considered I/O, network and filesystem access.
 
-
+Primitive schemes are components with only an output port.
 
 \subsubsection{External resources}
 \label{externalResources}
@@ -721,10 +734,11 @@ in memory in a tree structure that acts a bit like a memory filesystem.
 
 \subsection{Composite Schemes}
 
-Composite schemes combine create a new scheme by combining one or 
+Composite schemes  create a new scheme by combining one or 
 more existing schemes and applying processing to the identifiers, retrieved
 resources or both.
 
+\subsubsection{Relative Scheme}
 
 One example is the relative scheme resolver, which takes a base-binding
 and evaluates its references relative to that base.  Listing~\ref{rfc-scheme} shows
@@ -743,6 +757,9 @@ creating a URI scheme that is close to a URN.
 \end{lstlisting}
 \end{figure}
 
+\subsubsection{Binary Scheme}
+
+
 Another is a cache scheme, which has two schemes as its arguments,
 the base and the cache.  When accessed, the cache scheme first
 checks the scheme that was designated as its cache.  If the resource
@@ -758,10 +775,10 @@ pre-existing schemes, as shown in figure~\ref{http-cached}.
 
 
 \begin{figure}[htbp]
-\caption{A caching http stack made from composed schemes}
 \label{http-cached}
 \begin{center}
-\includegraphics[scale=0.55,page=1]{cached-http.pdf}
+\includegraphics[scale=0.5,page=1]{cached-http.pdf}
+\caption{A caching http stack made from composed schemes}
 \end{center}
 \end{figure}
 
@@ -771,12 +788,12 @@ that different from the diagram.  It is shown in listing~\ref{http-composed-list
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=http-composed-listing,caption=Code for caching http stack.]
 rawhttp := scheme:http.
-tempref := ref:file/tmp/ asScheme.
-diskCache := CacheScheme cacheWithScheme: tempref.
-memoryCache := CacheScheme memoryCache.
+tempdir := ref:file/tmp/ asScheme.
+filecache := CacheScheme cacheWithScheme: tempdir.
+memcache := CacheScheme memoryCache.
 scheme:http := 
 
- rawhttp -> diskCache -> memoryCache.
+ rawhttp -> filecache -> memcache.
 \end{lstlisting}
 \end{figure}
 
@@ -788,7 +805,20 @@ which can be also be used to implement copy-on-write behavior similar to
 VPRI's world concept\cite{vpriworlds}.
 
 A {\em filter-scheme} applies custom processing to the identifiers going to
-its source scheme and the data flowing in and out.  A special case of the 
+its source scheme and the data flowing in and out.  The block filter-scheme
+takes a block for each 
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Caching and converting.]
+mapper := MIMEMapper defaultMapper.
+scheme:http := 
+
+ rawhttp -> filecache -> memcache -> mapper.
+\end{lstlisting}
+\end{figure}
+
+
+ A special case of the 
 filter scheme is the mime-mapper.  It turns serialized data obtained from
 external resource schemes such as {\tt file} or {\tt http} into domain objects
 using blocks keyed by mime-type.  
@@ -797,20 +827,15 @@ using blocks keyed by mime-type.
 \caption{Adding conversion to the caching http-stack}
 \label{http-cached-converted}
 \begin{center}
-\includegraphics[scale=0.55,page=1]{cached-and-mapped-http.pdf}
+\includegraphics[scale=0.5,page=1]{cached-and-mapped-http.pdf}
 \end{center}
 \end{figure}
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Caching and converting.]
-rawhttp := scheme:http.
-tempref := ref:file/tmp/ asScheme.
-diskCache := CacheScheme cacheWithScheme: tempref.
-memoryCache := CacheScheme memoryCache.
-mapper := MIMEMapper defaultMapper.
+\begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Converting and caching.]
 scheme:http := 
 
- rawhttp -> diskCache -> memoryCache -> mapper.
+ rawhttp -> filecache -> mapper -> memcache .
 \end{lstlisting}
 \end{figure}
 
@@ -825,7 +850,7 @@ shown in figure~\ref{http-converted-cached}.
 \caption{Caching the converted object}
 \label{http-converted-cached}
 \begin{center}
-\includegraphics[scale=0.55,page=1]{mapped-and-cached-http.pdf}
+\includegraphics[scale=0.5,page=1]{mapped-and-cached-http.pdf}
 \end{center}
 \end{figure}
 
@@ -844,6 +869,17 @@ scheme:http :=
  rawhttp -> diskCache -> mapper -> memoryCache.
 \end{lstlisting}
 \end{figure}
+
+With the mime-mapper in place in the revamped http-scheme, we can now use 
+an image that's stored on a remote server just by writing out its URL, as shown
+in listing~\ref{image-drawing}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=image-drawing,caption=Drawing a remote image.]
+drawingContext drawImage: http://
+\end{lstlisting}
+\end{figure}
+
 
 
 \subsection{Default scheme}
@@ -874,6 +910,9 @@ compound paths, so for compound paths a full URI with scheme must be used.
 
 
 \section{First class references}
+
+The four-step evaluation process we saw in section~\ref{polymorphic-identifiers} is
+actually a convenience 
 
 The bindings that are returned by scheme-resolvers are usually ephemeral, used just 
 to get to the value pointed to by the identifier, either reading or writing it.  This
