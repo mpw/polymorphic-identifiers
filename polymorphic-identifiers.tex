@@ -859,14 +859,9 @@ diagram in figure~\ref{http-converted-cached}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=http-converted-cached-listing,caption=Converting and caching.]
-rawhttp := scheme:http.
-tempref := ref:file/tmp/ asScheme.
-diskCache := CacheScheme cacheWithScheme: tempref.
-memoryCache := CacheScheme memoryCache.
-mapper := MIMEMapper defaultMapper.
 scheme:http := 
 
- rawhttp -> diskCache -> mapper -> memoryCache.
+ rawhttp -> filecache -> mapper -> memcache.
 \end{lstlisting}
 \end{figure}
 
