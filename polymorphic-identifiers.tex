@@ -93,13 +93,19 @@
 
 \begin{abstract}
 
-In OOP, we are used to the dynamism of polymorphism when applying messages (verbs) to objects (nouns).
-However, obtaining these objects via identifiers is usually static and monomorphic, with the semantics
-and storage mechanism not just fixed but hard-wired into compilers and VMs.  With {\em polymorphic identifiers}
-we propose applying the same principle of polymorphism and dynamic behavior to identifiers, 
-replacing the built-in, static identifiers and lookup mechanisms with a unified, dynamic and extensible mechanism
-for interacting with resources, be they local variables on the call stack or documents residing on a remote
-server.
+In object oriented programming, direct value (resource) access is generally discouraged or 
+even made impossible, being replaced with access mediated via messaging in order to
+gain the benefits of mediated access, encapsulation and polymorphism.
+
+However, neither messaging itself nor resource access mechanisms built strictly on top
+of messaging achieve these goals, instead causing code duplication, tying varying 
+implementations to specific interfaces, causing brittleness in the face of changes as well
+as performance problems and making parametrized access difficult.
+
+Instead, we propose {\em polymorphic identifiers}, a mediated, flexible, encapsulated
+and user-extensible  mechanism for resource access to complement messaging
+for actions.
+
 
 \end{abstract}
 
@@ -114,6 +120,12 @@ server.
 \section{Introduction}
 %\epigraph{There are only two hard things in Computer Science:  cache invalidation and naming things} {Phil Karlton}
 
+
+
+
+
+
+
 %This is not a paper about cache invalidation.   Rather, 
 We report on an experimental
 technique for expanding our ability to directly name many different 
@@ -126,14 +138,14 @@ These \emph{polymorphic identifiers} are not only user-extensible,
 but can also be manipulated in the programming language, making them first class 
 entities.
 
-Our starting point is a programming model such as that of Smalltalk, where we have objects
+Our starting point is a programming model similar to that of Smalltalk, where we have objects
 that communicate via messages\cite{Goldberg1983}.   Identifiers are used to identify 
 objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
-and polymorphic behavior can only be achieved with message-sends.
+and polymorphic behavior can only be achieved via message-sends.
 
 
-Identifiers that need to point to other entities or used in different ways must be defined
-by the user and cannot be used interchangeably with built in identifiers.  
+Identifiers that need to point to other entities or be used in different ways must be defined
+by the programmer and cannot be used interchangeably with built in identifiers.  
 
 %\cite{Brooks87nosilver}
 We believe that the accidental complexity introduced by the
@@ -153,20 +165,13 @@ The remainder of this paper is organized as follows:
 Section~\ref{background}  shows how we got to thinking about identifiers.
 Section~\ref{identifiers} gives an overview on common identifier schemes.
 Section~\ref{user-defined-identifiers} describes the use and shortcomings of user-defined identifiers.
-In Section~\ref{polymorphic-identifiers} we present \emph{polymorphic identifiers} and briefly describe their implementation in Section~\ref{implementation}.
+In Section~\ref{polymorphic-identifiers} we present \emph{polymorphic identifiers} and illustrate their implementation in Section~\ref{implementation}.
 Section~\ref{related-work} discusses related work and Section~\ref{summary-and-outlook} concludes our paper and lays out ideas for future work.
 
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
-\section{Background and Motivation}
-\label{background}
-
-\begin{itemize}
-\item take the three/four ideas from my notebook
-\item In architecture and in languages you
-\end{itemize} 
 
 
 
@@ -175,16 +180,46 @@ Section~\ref{related-work} discusses related work and Section~\ref{summary-and-o
 \label{identifiers}
 %\epigraph{When programming a component, the right computation model for the component is the least expressive model that results in a natural program.}{Rule of Least Expressiveness.}
 
-Identifiers are symbols that serve as human-readable names for entities/objects
-in a program.  They are converted to actual references, usually with a mixture of
-compile-time and run-time lookups.  For example, to obtain the value of the local
-variable named {\bf anObject}, we would have to search the local context for
-a slot named {\bf 'anObject'} and then return the value stored in that slot (Listing~\ref{variable-lookup}).
+
+Identifiers that point to resources come in many different forms ranging from local,
+global or instance variables to names for disk files or URIs pointing to network resources.
+
+\begin{figure}[htbp]
+\label{identifier-eval}
+\begin{center}
+\includegraphics[scale=0.55,page=1]{basic-storage.pdf}
+\caption{Generic identifier lookup}
+\end{center}
+\end{figure}
+
+Whatever the specific type, the relationship between the actual identifier and the
+final value looks like figure~\ref{identifier-eval}, with slight variations:   there is
+the identifier itself, which is a human-readable character string, there is some sort
+of store that has identifiable slots or cells and there is a value stored in one of those
+cells.   In order to retrieve a value, the identifier is converted to a value using the
+hypothetical {\em ref(identifier)} function and then the reference is used to look up an actual
+value from a slot using the {\em value(reference)} function.
+
+
+
+\subsection{Direct reference}
+
+Like most programming language, our dialect of Smalltalk allows you to just write 
+an identifier that refers to certain kinds of variable in order to retrieve the 
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=variable-lookup,caption=Interacting with a local variable.]
+  theAnswer.
+  theAnswer := 42.
+\end{lstlisting}
+\end{figure}
+
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=variable-lookup,caption=Lookup of a local variable.]
-  (localContext variableNamed:'anObject') value.
+\begin{lstlisting}[style=L,label=variable-lookup,caption=Reified local variable access.]
+  (localContext slotAtName:'theAnswer') GET.
+  (localContext slotAtName:'theAnswer') PUT:42.
 \end{lstlisting}
 \end{figure}
 
@@ -469,7 +504,8 @@ the program, but is essentially opaque and meaningless to the programming
 language.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=many-urls,caption=Many URLs with duplication]
+\begin{lstlisting}[style=L,label=many-urls,caption=Looking up RFCs]
+
 u1 :=NSURL URLWithString:'http://www.example.org'.
 u2 :=NSURL URLWithString:'http://www.metaobject.com'.
 u3 :=NSURL URLWithString:'file:/tmp/testfile.txt'.
@@ -693,7 +729,7 @@ an assignment statement will perform an HTTP or FTP PUT request or write to a fi
 
 
 
-\subsubsection{In-memory access}
+\subsubsection{In-memory resources}
 \label{inmemory}
 
 So far, we have simply added file and Web-access via URLs to a 
