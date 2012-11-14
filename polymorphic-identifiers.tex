@@ -38,6 +38,9 @@
 }
 %\lstdefinestyle{L}{basicstyle=\ttfamily}
 \lstdefinestyle{L}{basicstyle=\ttfamily\scriptsize}
+\lstdefinestyle{numbers}
+{numbers=left, stepnumber=1, numberstyle=\tiny, numbersep=10pt,basicstyle=\ttfamily\scriptsize}
+
 %%--- end of listings configuration
 
 
@@ -102,9 +105,8 @@ of messaging achieve these goals, instead causing code duplication, tying varyin
 implementations to specific interfaces, causing brittleness in the face of changes as well
 as performance problems and making parametrized access difficult.
 
-Instead, we propose {\em polymorphic identifiers}, a mediated, flexible, encapsulated
-and user-extensible  mechanism for resource access to complement messaging
-for actions.
+We propose {\em polymorphic identifiers} as a reified and open replacement for both
+language- and user-provided identifier mechanism. 
 
 
 \end{abstract}
@@ -118,27 +120,17 @@ for actions.
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
 \section{Introduction}
-%\epigraph{There are only two hard things in Computer Science:  cache invalidation and naming things} {Phil Karlton}
 
-
-
-
-
-
-
-%This is not a paper about cache invalidation.   Rather, 
 We report on an experimental
-technique for expanding our ability to directly name many different 
-entities
-%\footnote{``Entities'' in this context are just ``things'', they are not intended to be identical
-%to the entities in entity-relationship modeling} 
-in programming languages using a common and extensible identifier and identifier resolution
+technique for expanding our ability to directly name and reference many different 
+resources
+in programming languages using a common identifier and identifier resolution
 mechanism.
 These \emph{polymorphic identifiers} are not only user-extensible,
 but can also be manipulated in the programming language, making them first class 
 entities.
 
-Our starting point is a programming model similar to that of Smalltalk, where we have objects
+Our starting point is Smalltalk, where we have objects
 that communicate via messages\cite{Goldberg1983}.   Identifiers are used to identify 
 objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
 and polymorphic behavior can only be achieved via message-sends.
@@ -147,26 +139,19 @@ and polymorphic behavior can only be achieved via message-sends.
 Identifiers that need to point to other entities or be used in different ways must be defined
 by the programmer and cannot be used interchangeably with built in identifiers.  
 
-%\cite{Brooks87nosilver}
-We believe that the accidental complexity introduced by the
-plethora of ad-hoc mechanisms for addressing the difference between built-in 
-and user-defined identifiers can be reduced 
-by unifying them using our \emph{polymorphic identifiers} presented in this paper.
+The contributions of this paper are
+\begin{enumerate} \item a uniform, composable and extensible resource access mechanism for all
+resources in a program, \item  a way of integrating that access mechanism naturally into the language for
+direct, {\em identifier oblivious} access and
+\item a uniform treatment of references for indirect, {\em identifier aware} access.
+\end{enumerate}
 
-The contributions of this paper are (1) a classification of identifier usage styles, {\em oblivious}
-and {\em aware}, which
-are usually tightly coupled to identifier types, built-in and user-defined respectively.
-(2) A new, URI-based identifier type
-that unifies identifier types and eliminates the coupling to usage styles. (3) Mechanisms
-that allow new identifier-based abstractions to be created.
-
-
-The remainder of this paper is organized as follows: 
-Section~\ref{background}  shows how we got to thinking about identifiers.
-Section~\ref{identifiers} gives an overview on common identifier schemes.
-Section~\ref{user-defined-identifiers} describes the use and shortcomings of user-defined identifiers.
-In Section~\ref{polymorphic-identifiers} we present \emph{polymorphic identifiers} and illustrate their implementation in Section~\ref{implementation}.
-Section~\ref{related-work} discusses related work and Section~\ref{summary-and-outlook} concludes our paper and lays out ideas for future work.
+In section~\ref{identifiers}, we will look at different ways of accessing resources and see
+the shortcomings of those approaches.  In section~\ref{polymorphic-identifiers}, we 
+describe {\em polymorphic identifiers} as a reification, abstraction and extension of existing 
+identifier lookup mechanisms.  Section~\ref{schemes} gives more details on {\em scheme resolvers},
+an important component especially for composability, whereas section~\ref{references} looks
+at references, which mediate access.  
 
 
 
@@ -181,7 +166,7 @@ Section~\ref{related-work} discusses related work and Section~\ref{summary-and-o
 %\epigraph{When programming a component, the right computation model for the component is the least expressive model that results in a natural program.}{Rule of Least Expressiveness.}
 
 
-Identifiers that point to resources come in many different forms ranging from local,
+Identifiers that name resources come in many different forms ranging from local,
 global or instance variables to names for disk files or URIs pointing to network resources.
 
 \begin{figure}[htbp]
@@ -200,360 +185,176 @@ cells.   In order to retrieve a value, the identifier is converted to a value us
 hypothetical {\em ref(identifier)} function and then the reference is used to look up an actual
 value from a slot using the {\em value(reference)} function.
 
+\mpw{Identifier + Verb GET/PUT here?}
 
+We will look at 4 distinct types of identifiers that all follow this basic pattern:  language-supported 
+{\em direct reference}, where identifiers directly resolve to values, {\em message-based} lookup
+used for encapsulation,
+{\em string-based} lookup often used with extensible data structures or filesystem access and
+finally reified object access.   While each of these has its benefits, they all exhibit problems.
+\mpw{Not sure that's how I want to phrase it, at least be more specific}
 
 \subsection{Direct reference}
 
-Like most programming language, our dialect of Smalltalk allows you to just write 
-an identifier that refers to certain kinds of variable in order to retrieve the 
+Like most programming language, our dialect of Smalltalk\cite{Goldberg1983} allows you to just write 
+an identifier by itself, and this will not just reference the slot that the identifier names, but also
+automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
+the assignment operator {\tt :=}.    Assuming I have a variable that contains {\tt theAnswer} to 
+life, the universe and everything, I can access it as shown in listing~\ref{variable-lookup}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=variable-lookup,caption=Interacting with a local variable.]
+\begin{lstlisting}[style=L,label=variable-lookup,caption=Interacting with a local resource.]
   theAnswer.
   theAnswer := 42.
 \end{lstlisting}
 \end{figure}
 
+Due to the fact that the programmer does not, and cannot, deal with either the identifier
+or the reference, but names the value using the identifier, we call this an {\em identifier oblivious}
+access.  This type of direct access is only possible for a few specific variable types
+(local, instance, class, pool and global) and supported directly by the compiler.
+
+If it were possible to make the lookup explicit, what we call {\em identifier aware},
+the code would look something like listing~\ref{reified-variable-lookup}.  Apart
+from the infinite recursion ({\tt thisContext}  also needs to be looked up),
+forcing this style would be prohibitive from both effort/readability and performance
+perspectives.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=variable-lookup,caption=Reified local variable access.]
-  (localContext slotAtName:'theAnswer') GET.
-  (localContext slotAtName:'theAnswer') PUT:42.
+\begin{lstlisting}[style=L,label=reified-variable-lookup,caption=Reified local resource access.]
+  (thisContext slotAtName:'theAnswer') get.
+  (thisContext slotAtName:'theAnswer') set:42.
 \end{lstlisting}
 \end{figure}
 
-Some  languages actually perform all these steps at run-time, but most 
-have a compiler help with efficiency by converting the names to indexes into
-the local context and the value lookup into a simple indexed load from memory.
+Whereas using this type of direct access with non-local objects is considered at least
+questionable style in languages that support it, such as Java or C++, it is simply prohibited in Smalltalk.
+The reason is that syntactically direct access is conflated with machine-level direct
+access:  the implementation is a straight memory reference, without any possibility
+of providing alternative storage strategies or intervening programmatically.
 
-Most programming languages don't just optimize the implementation of the identifier
-lookup operation, but also the interface.  Instead of having to specify how to
-look up the identifier in the local context, the programmer can just write the
-identifier {\bf anObject}, which the programming language will treat as equivalent to the
-value that will be obtained by looking up the name in the local context.  
+Languages with pointers such as C++ and Objective-C can provide a reference to a variable
+by taking the address using the {\tt \&} operator ({\tt \&theAnswer}).   However, this is once
+again a direct memory reference without any encapsulation or options of providing 
+alternate implementations in the future.  Smalltalk once again prohibits such access.
 
+\subsection{Message-based access}
+
+Encapsulation and the potential for polymorphic behavior can be achieved by using
+messages to access the value in question.  Listing~\ref{variable-lookup} shows 
+obtaining or setting {\tt theAnswer} by interacting with the {\tt deepThought}\cite{adams1997hitchhiker} object,
+as shown in listing~\ref{message-access}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=plain-identifier,caption=Identifier-oblivious variable lookup.]
-  anObject.
+\begin{lstlisting}[style=L,label=message-access,caption=Asking an object.]
+  deepThought getTheAnswer.
+  deepThought setTheAnswer:42.
 \end{lstlisting}
 \end{figure}
 
-This  {\em identifier-oblivious} style shown in Listing~\ref{plain-identifier}, where lookup of the value bound to and
-identifier is implied, is so familiar that we don't usually think about it, we just
-refer to object using the identifier.
-The alternative {\em identifier-aware} style shown in Listing~\ref{variable-lookup} would get cumbersome quickly.
+Due to the fact that resource access is hidden behind a message send that will cause
+a method to execute, the client does not know wether {\tt deepThought} will just
+quickly return a stored representation or instead go off to compute the answer for 
+several hundred million years. 
 
-Non-local entities such as sub-parts of constructed objects 
-cannot be referred to symbolically by a single identifier.
-Instead, they must be obtained using computation, a 
-sequence of operations, which in Smalltalk is performed using message sends.
-
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=non-local-reference,caption=Accessing objects via chained message sends.]
-	myColor :=robot head leftEye color.
-	robot head leftEye color: myColor.
-\end{lstlisting}
-\end{figure}
-
-Listing~\ref{non-local-reference} shows both read and write access to the property
-of a nested object structure using message-sends.  Note how symmetric operations
-(read and write) require a non-symmetric implementation:  for the read, we have an assignment
-from a series of chained messages, for the write we have a slightly different set of 
-chained messages with the last message in the chain taking our desired value
-as an argument.  In order to interact with an entity that should have a single name,
-we need at least two names:  the getter and the setter.
-
-This asymmetry is related to the fact that although we can hide an object reference 
-behind a computational interface, we cannot
-hide a computation behind a object reference interface, another asymmetry.
-Thus any kind of external API has to be presented through a computational, messaging 
-interface, even if the intention is not computation, but just access to a resource,
-  and all information hiding also requires messaging.  This has led languages
-like Self \cite{UngarS87} and Newspeak \cite{newspeak} to effectively abandon identifiers as direct symbolic names for objects. Instead there is only messaging and
-all objects are obtained by sending messages to other objects.
-
-On the World Wide Web with its REST architectural style the situation is exactly the inverse: 
-the interface to resources is their identifier, the Uniform Resource Locator (URL, Listing~\ref{url-example}).
-Wether computation happens in providing the resource is a hidden implementation detail
-(ignoring the messaging protocols usually required to transmit the resource
-to the client).  
-
+While this level of encapsulation, with its potential for polymorphic behavior, is 
+beneficial, it does come at a cost:   instead of the factored 
+representation of an identifier and two verbs, {\tt get} and {\tt set},
+this is multiplied out for each and every visible attribute of 
+each and every class. 
+ 
+The code duplication doesn't stop with preventing the factoring of the get and set 
+actions for each
+named resource:  we also 
+must provide two trivial accessor methods like the ones in listing~\ref{trivial-accessors} for each actual resource we wish
+to access.  Studies show that around 5\% of Java code consists of such trivial accessors\cite{Spinellis:2002:MPC:510857.510868}, and although the authors of said study argue that this is {\em not} enough
+to warrant special treatment, it should be noted that the prevalence of actual polymorphic 
+message sends is also reported to be around 5\% \cite{Holzle:1991:ODO:646149.679193}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=url-example,caption=A Uniform Resource Locator.]
-http://www.shipper.com/track/12345678
-\end{lstlisting}
-\end{figure}
+\begin{lstlisting}[style=L,label=trivial-accessors,caption=Trivial accessors.]
+getTheAnswer
+    ^theAnswer.
 
-So instead of having
-a package-tracking application that takes a parameter (2 entities),
-one can simply take the view that ``every package has its own 
-Web-site'', which is then just one entity referenced by a single,
-parameterless identifier.  This type of encapsulation behind
-a single, parameterless identifier makes bookmarks and single-click,
-browser-based navigation possible.
-
-
-Instead of hiding references behind messaging,
-messaging is hidden behind an identifier, and REST-ful Web-applications
-perform computations by dereferencing a series of identifiers, that 
-are provided incrementally and dynamically in responses.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=urn-example,caption=A Uniform Resource Name.]
-urn:isbn:123123123
-\end{lstlisting}
-\end{figure}
-
-Whereas URLs specify an access path including a network protocol, Uniform 
-Resource Names (URNs) like the ISBN in Listing~\ref{urn-example} only specify a logical
-name, leaving the resolution of that name completely open.  In a sense, URNs
-correspond to interfaces.
-
-Uniform Resource Identifiers (URIs) are a generalization of URLs, which specify a
-resource by its protocol, network location, and access path and Uniform Resource Names (URNs),
-which specify
-a resource by a logical name and leave it to system processes to 
-determine the exact location.  In practice, most URIs are located on
-a continuum with URNs on one end and URLs on the other.
-
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
-
-\section{User-defined identifiers}
-\label{user-defined-identifiers}
-
-Network resources identified by URIs are among the many entities that most
-programming languages cannot refer to directly using identifiers available to the
-language itself.
-However, those entities still need to be addressed, so developers are required
-to construct their own identifiers  and objects as well as methods for resolving them to the actual
-entities.
-
-\subsection{External resources}
-
-Files, for example are referenced by their filename, or more precisely
-a string that represents their access path in the filesystem (often from the root 
-directory).  The operating system is responsible for mapping these
-paths to entities allowing access to the contents of the file.  For example accessing
-the current user's ``.bashrc'' file looks as follows:
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=posix-file-resolve,caption=Resolving a name to a file in the user's home directory.]
-   char fullname[MAXPATHLEN];
-   snprintf(fullname,MAXPATHLEN,"%s/.bashrc",
-                            getenv("HOME"));
-   int fd = open( filename );
-   if ( fd >= 0 ) { 
-      //... read contents of file using read()
-      close(fd);
-   }
-\end{lstlisting}
-\end{figure}
-
-The string represents a user-defined identifier, which is just a plain character
-string that has no meaning to the programming language and must be 
-manually resolved by the developer in the {\em identifier-aware} style 
-introduced in Section~\ref{identifiers}.  In fact, two different identifiers
-are resolved in Listing~\ref{posix-file-resolve}:  first, the identifier {\bf HOME}
-from the domain of environment variables is needed, which requires calling
-the {\bf getenv()} function to resolve the identifier string to a value.  That result,
-also a string, is then combined with the name of the file in question using generic
-string processing functions and passed
-to the {\bf open()} system call to return an actual file reference.  Boundary conditions
-and error checking have been ignored to keep the sample manageable.
-
-Convenience APIs can ameliorate the situation somewhat, for example shortening 
-the multiple steps above into a single (slightly verbose) expression and making the
-string processing safer.  However, they cannot
-change the fundamental fact that the identifiers in question are basic strings,
-manipulating them requires string processing and user-level resolution of the
-string to an entity.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=cocoa-file-contents,caption=Cocoa convenience API for accessing file contents.]
-   NSData dataWithContentsOfFile:
-     ((NSProcessInfo processInfo
-        environment 
-        objectForKey:'HOME') 
-       stringByAppendingPathComponent:'.bashrc')
-\end{lstlisting}
-\end{figure}
-
-Which identifiers we can use in an oblivious style and which we need to
-be aware of and resolve ourselves is pre-determined by the programming
-language.
-The same identifier that needs to be created using string processing from various
-components in both the POSIX and the Cocoa can be written directly in a typical
-Unix shell, including the variable part (Listing~\ref{sh-file-contents}).
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=sh-file-contents,caption=File contents in a shell.]
-  cat $HOME/.basrhc
-\end{lstlisting}
-\end{figure}
-
-The lack of string quotes is not just cosmetic: both the variable and the filename
-are not just opaque strings, but entities that the shell is aware of and can identify
-using the identifiers provided,for example being able to assist by autocomplete 
-or wildcard expansion.
-
-
-\subsection{Application-specific data representation}
-
-\mpw{Also more efficient representations, such as {\em vertical}, storing arrays of values and indexes into those}
-
-User-defined access is not restricted to external resources, but also
-prevalent when code needs to interact generically with dynamic
-or application-specific data.   Two examples of this usage pattern
- for user-defined access are user interfaces (UIs) and XML processing.
-
-In UIs it is often required for
-a specific UI item to modify some part of a model object, in our
-example the color of the robots left eye.  In order for the UI element to be
-able to manipulate the part, it needs to be parametrized at run-time with
-an identifier that points to that part of a specific base object.   As the built-in
- identifiers typically are only available at compile-time, developers are
- once again forced to invent their own user-defined identifiers, which are again 
- typically string-based.  Since accessing objects via strings requires
- meta-programming, there is then often pressure to abandon data
- modeling with objects altogether and just use dictionaries everywhere.
-
-
-DOM-based XML processors need to provide mechanisms to access parts of
-an XML document, but except for the specific XML-data binding libraries that
-require code-generation, the exact structure of the XML file is not known at 
-compile-time and therefore built-in identifiers cannot be used.  Both DOM libraries
-and more sophisticated query processors such as xpath or xquery therefore use
-strings as their user-defined identifiers.
-
-
-
-
-\subsection{The trouble with strings}
-%\epigraph{The string is a stark data structure and everywhere it is passed there is much duplication of process. It is a perfect vehicle for hiding information.}{Alan Perlis}
-\label{stringtrouble}
-
-One aspect that virtually all user-defined identifier mechanisms have in common is that they
-are based on string processing.  The use of strings makes user-defined identifiers relatively
-close to language identifiers ({\bf \hbox{anObject}} vs {\bf \hbox{'anObject'}}), but brings with it a number of problems in terms of overhead, correctness, and safety.
-
-As shown above, the first problem is that a string is not an identifier, and therefore
-must be passed as an argument to some function or method to actually return
- an object, either doubling (function + identifier) or tripling (class/object + message + string ) the number of entities involved to retrieve the desired entity.  
-
-The compiler does not have insight into strings that may be used as user-defined 
-identifiers at some point in the future, and therefore cannot determine wether 
-a string-based identifier is correct, or even syntactically well-formed.   The compiler
-and runtime also cannot help with turning the identifier into a more efficient representation
-like an index into a local store.  Instead, lookup must be performed using hash-tables
-or other dictionary structures at runtime on individual path components, 
-and complex paths must be first be decomposed into their components.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=url-as-obj,caption=URL initialized in an object-oriented fashion.]
-u := NSURL alloc
-           initWithScheme:'http'
-           host:'www.example.org'
-           path:'/' 
-\end{lstlisting}
-\end{figure}
-
-All this run-time processing of strings is performed with general-purpose string
-processing libraries that do not take the identifier semantics into account, with
-many string operations capable of turning valid identifiers into invalid ones.
-While it was fairly easy to paper over the differences between strings as 
-data structures for human-readable text and strings as identifiers for programs,
-the differences are becoming more obvious with internationalization, as the
-problems making Perl UTF8 or Unicode aware demonstrate \cite{perl-unicode}
-
-Mixing strings-as-user-data with strings-as-identifiers also has well known
-security problems such as shell-escaping and SQL-injection, one of the
-biggest sources of vulnerabilities on the Web.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=url-as-string,caption=URL initialized with a single string.]
-u:=NSURL URLWithString:'http://www.example.org'
-\end{lstlisting}
-\end{figure}
-
-
-
-On the other hand, using non-string types, while increasing safety somewhat,
-obscures intent even further by breaking up the identifiers.
-It is certainly debatable wether the more object-oriented
-initialization of Listing~\ref{url-as-obj}  has any practical benefits over a
-simple initialization from string as in Listing~\ref{url-as-string}, and in
-the end the components are still strings and must be converted/combined
-into the full URL at runtime.
-
-
-
-In both cases, the part of the expressions that are actually semantically meaningful
-to the programming language are just {\em syntactic noise}, they don't really carry
-any meaning for the program but are necessary to make the syntax work.  The
-embedded string, on the other hand, is the part that actually carries meaning for
-the program, but is essentially opaque and meaningless to the programming
-language.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=many-urls,caption=Looking up RFCs]
-
-u1 :=NSURL URLWithString:'http://www.example.org'.
-u2 :=NSURL URLWithString:'http://www.metaobject.com'.
-u3 :=NSURL URLWithString:'file:/tmp/testfile.txt'.
-
-d1:=NSData dataWithContentsOfURL: u1.
-d2:=NSData dataWithContentsOfURL: u2.
-d3:=NSData dataWithContentsOfURL: u3.
-\end{lstlisting}
-\end{figure}
-
-Listing~\ref{many-urls} illustrates the problem by showing the code for
-creating 3 URLs and then fetching their contents.  Almost all of this code
-is boilerplate that we should factor out, but it turns out that this factoring
-can only go so far.  Listing~\ref{many-urls-factored1} shows one possible
-factoring, which pushes the responsibility for resolving URLs into the
-URL representation class, though that could also be a separate Resource 
-Manager. 
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=many-urls-factored1,caption=Partial factoring]
-d1:=NSURL contentsOfURLString:'http://www.example.org'.
-d2:=NSURL contentsOfURLString:'http://www.metaobject.com'.
-d2:=NSURL contentsOfURLString:'file:/tmp/testfile.txt'.
+setTheAnswer:newAnswer
+    theAnswer := newAnswer.
 
 \end{lstlisting}
 \end{figure}
 
-An ideal factoring would remove all the repeated boilerplate code, but in this case
-that would leave just the strings, leading to the incorrect factoring in Listing~\ref{urls-factored-ideally}.
+As we should expect, all that unfactored code gets us into trouble if we want 
+to make changes:   if we want to globally change how the {\tt set}
+operation works, for example, either because we want a different storage
+mechanism or some additional behavior,
+we must manually change the trivial accessor for every attribute to which
+we want to apply this change, because we combined the attribute and
+the generic operation into one attribute-specific operation.
+\mpw{a little cumbersome}
 
+
+As long as we can compute messages to send at runtime,
+passing references to message-accessed resources is easier than with
+direct references.  However, it still poses challenges, because we have decomposed
+access to the resource into two distinct messages whose only relationship is by 
+convention.  The best we can do when we want to access the resource
+is an object that is either initialized with both selectors or can derive them
+programmatically (by string manipulation) from the resource name.
+
+\subsection{String-based identifiers}
+
+For the large number of use cases not covered by either direct reference or
+message-based access, string-based identifiers interpreted at runtime 
+seem to be the implementation method of choice.  Listing~\ref{string-identifiers}
+gives a small sampling from one programming environment.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=urls-factored-ideally,caption=Ideal but incorrect factoring]
-d1 :='http://www.example.org'.
-d2 :='http://www.metaobject.com'.
-d3 :='file://tmp/testfile.txt'.
+\begin{lstlisting}[style=numbers,label=string-identifiers,caption=Variants of string-based identifiers.]
+deepThought valueForKey:'theAnswer'.
+deepThought setValue:42 forKey:theAnswer.
+aDictionary objectForKey:'theAnswer'.
+aDictionary setObject:42 forKey:'theAnswer'.
+NSDefaults standardUserDefaults
+	 objectForKey:'theAnswer'.
+NSDefaults standardUserDefaults
+	 setObject:'42' forKey:'theAnswer'.
+NSString stringWithContentsOfFile:'theAnswer.txt'
+'42' writeToFile:'theAnswer.txt' atomically:YES.
+UIImage imageWithContentsOfFile:'answerImage.png'.
+UIImage imageNamed:'pictureOf42'.
+answerURL := NSURL URLWithString:
+	'http://www.depthought.com/theAnswer'.
+NSData dataWithContentsOfURL:answerURL.
 \end{lstlisting}
 \end{figure}
 
-The reason this factoring is ideal is that it has eliminated all the repeated boilerplate code, the
-reason that it is incorrect is that the naked strings carry no semantics other than just being
-character sequences, there is no entity to evaluate the URIs within the strings.
+String-based identifiers are used for dynamic access to objects (1,2), 
+in dynamic, run-time extensible data structures such as
+dictionaries (3,4)  for custom storage mechanisms such as persistent
+user defaults (5-8), for generic (9,10) or type-specific (11) file access, cached
+access to named application resources (10) and to construct URLs (13,14)
+for later use (15).
 
-A solution that would allow this factoring to take place would be let the programming
-language implicitly evaluate those character strings, just like it does with other
-identifiers.  In order to make this happen, the notion of identifier has to be expanded
-slightly and we will need some extra infrastructure to make it all possible.
+Since the strings themselves can't carry semantics, they must be handed
+off to a runtime interpreter, which then performs the actual access.  The 
+interpreter can be as simple as a simple string lookup into a dictionary,
+but it must always be specified in addition to the string, leading to 
+code-bloat that cannot be removed by factoring.
 
+Evaluation at runtime obviously also has performance and safety implications,
+with the compiler unable to help by pre-computing indexes, checking 
+the validity of accesses or even the well-formedness of the identifiers.
+
+
+\mpw{problems:  slow, polymorphism vs. readability, }
+
+\subsection{Discussion}
+
+
+
+\mpw{overall:  can't switch between them, would like expressiveness/convenience
+	(and performance) of direct access, polymorphism of messaging, 
+	user-extensibility + parametrized access of strings}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
@@ -561,18 +362,26 @@ slightly and we will need some extra infrastructure to make it all possible.
 \label{polymorphic-identifiers}
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
-\mpw{Beginning needs to be standalone, so reader can start here}
+\mpw{PIs allow direct access, polymorphic implementation and explicit manipulation of references}
 
-With Polymorphic Identifiers, the ideal but incorrect factoring of Listing~\ref{urls-factored-ideally}
-can be converted into a correct factoring of Listing~\ref{several-pis} by leaving out the quotation marks.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=several-pis,caption=Corrected ideal factoring]
-d1 := http://www.example.org.
-d2 := http://www.metaobject.com.
-d3 := file://tmp/testfile.txt
+\begin{lstlisting}[style=numbers,label=string-identifiers,caption=Some variants of polymorphic identifiers.]
+var:deepThought/theAnswer.
+var:deepThought/theAnswer := 42.
+var:aDictionary/theAnswer.
+var:aDictionary/theAnswer := 42.
+defaults:theAnswer.
+defaults:theAnswer := 42.
+file:theAnswer.txt.
+file:theAnswer.txt := 42.
+file:answerImage.png.
+img:pictureOf42.
+http://www.depthought.com/theAnswer.
 \end{lstlisting}
 \end{figure}
+
+\mpw{Explain the list}
 
 Polymorphic Identifiers replace the static identifiers found in programming languages with
 a dynamic, user-extensible system for resource access, wether those resources exist
@@ -595,6 +404,7 @@ The unification means that both external and internal resources can be addressed
 identifier-oblivious or identifier-aware styles, the arbitrary distinction demonstrated in
 the previous sections is removed.
 
+\mpw{no longer needed}
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=first-polymorphic-examples,caption=\emph{Polymorphic identifiers} in simple expressions.]
   http://www.acm.org/
@@ -641,7 +451,7 @@ for turning strings into PIs at runtime.
 
 
 \section{Schemes and scheme handlers}
-
+\label{schemes}
 Schemes are the main point of variability in the PI system
 and broadly fall into two categories:   {\em primitive schemes}(\ref{primitiveSchemes})
 directly encapsulate access to some sort of resource, while {\em composite schemes} 
@@ -795,6 +605,8 @@ creating a URI scheme that is close to a URN.
 
 \subsubsection{Binary Scheme}
 
+\mpw{do sequential lookup here, for Fielding's IETF/RFC example
+	and lookup rules for variables (local, instance, ... )}
 
 Another is a cache scheme, which has two schemes as its arguments,
 the base and the cache.  When accessed, the cache scheme first
@@ -938,10 +750,10 @@ One syntactic limitation of the default scheme mechanism is that it does not all
 compound paths, so for compound paths a full URI with scheme must be used.
 
 
-
+\mpw{no changes yet beyond this point}
 
 \section{First class references}
-
+\label{references}
 The four-step evaluation process we saw in section~\ref{polymorphic-identifiers} is
 actually a convenience 
 
