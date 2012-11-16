@@ -185,14 +185,14 @@ cells.   In order to retrieve a value, the identifier is converted to a value us
 hypothetical {\em ref(identifier)} function and then the reference is used to look up an actual
 value from a slot using the {\em value(reference)} function.
 
-\mpw{Identifier + Verb GET/PUT here?}
 
 We will look at 4 distinct types of identifiers that all follow this basic pattern:  language-supported 
 {\em direct reference}, where identifiers directly resolve to values, {\em message-based} lookup
 used for encapsulation,
 {\em string-based} lookup often used with extensible data structures or filesystem access and
-finally reified object access.   While each of these has its benefits, they all exhibit problems.
-\mpw{Not sure that's how I want to phrase it, at least be more specific}
+finally reified object access.   While each of these approaches solves a part of the problem,
+none of them is satisfactory in the end, either lacking capability and extensibility or leading to
+irreducible code-duplication, brittleness and simply cumbersome code.
 
 \subsection{Direct reference}
 
@@ -322,9 +322,6 @@ NSString stringWithContentsOfFile:'theAnswer.txt'
 '42' writeToFile:'theAnswer.txt' atomically:YES.
 UIImage imageWithContentsOfFile:'answerImage.png'.
 UIImage imageNamed:'pictureOf42'.
-answerURL := NSURL URLWithString:
-	'http://www.depthought.com/theAnswer'.
-NSData dataWithContentsOfURL:answerURL.
 \end{lstlisting}
 \end{figure}
 
@@ -335,26 +332,79 @@ user defaults (5-8), for generic (9,10) or type-specific (11) file access, cache
 access to named application resources (10) and to construct URLs (13,14)
 for later use (15).
 
-Since the strings themselves can't carry semantics, they must be handed
-off to a runtime interpreter, which then performs the actual access.  The 
-interpreter can be as simple as a simple string lookup into a dictionary,
-but it must always be specified in addition to the string, leading to 
-code-bloat that cannot be removed by factoring.
+Since the strings themselves don't carry semantics for the programming language,
+they must be handed off to a runtime interpreter, which then performs the actual access.  The 
+interpreter can be as simple as a  string lookup into a dictionary,
+but it must always be specified in addition to the string.  Listing~\ref{string-bloat}
+shows how having to specify this interpreter obscures intent by adding syntactic
+noise compared to direct messaging, code bloat that cannot be removed by factoring.
 
-Evaluation at runtime obviously also has performance and safety implications,
-with the compiler unable to help by pre-computing indexes, checking 
-the validity of accesses or even the well-formedness of the identifiers.
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=string-bloat,caption=Bloat with keyed access.]
+universe setObject:(deepThought objectForKey:'theAnswer')
+	 forKey:'answer'
+universe setAnswer:deepThought theAnswer.
+\end{lstlisting}
+\end{figure}
+
+Apart from the performance costs and the inability of the compiler to help
+even check well-formedness of string-based identifiers, there is the problem
+of context when using identifiers as references, illustrated in listing~\ref{string-reference}:
+we have the string-based identifier {\tt 'theAnswer'}, which we have placed into the
+variable {\tt answerReference}.   However, the reference is not self-contained, we
+have to know what exact type of container is used and use the appropriate message
+to interpret the string, either {\tt valueForKey:} for a generic object or {\tt objectForKey:}
+for a dictionary and {\tt stringWithContentsOfFile:} for a file.
 
 
-\mpw{problems:  slow, polymorphism vs. readability, }
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=string-reference,caption=Indeterminate references.]
+answerReference := 'theAnswer'.
+deepThought valueForKey:answerReference.
+dictionary objectForKey:answerReference.
+NSString stringWithContentsOfFile:answerReference.
+\end{lstlisting}
+\end{figure}
+
+We could ameliorate the situation slightly by having a single universal protocol
+for string-identifier lookup, but that makes the actual message essentially
+meaningless and thus even more syntactic noise, and also means that we need
+to somehow differentiate the lookup scope within the string identifier.   The
+{\em schemes} used in URIs to differentiate lookup scopes are a potential
+solution.
+
+
+\subsection{Reified identifiers}
+
+
+Another way of solving the context problem illustrated in listing~\ref{string-reference} 
+is creating an actual reference object that carries the lookup
+semantics with it, but as shown in listing~\ref{reified-identifiers},
+this increases code bloat even more, and we still have to specify the initial identifier as string.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Reified identifier.]
+answerURL := NSURL URLWithString:
+	'http://www.depthought.com/theAnswer'.
+NSData dataWithContentsOfURL:answerURL.
+\end{lstlisting}
+\end{figure}
+
+
 
 \subsection{Discussion}
 
+Although resource access is one of the most basic operations in a programming, combining
+with traits we have come to expect from object-orientation such as encapsulation, polymorphic
+behavior and user-extensibility turns out to be surprisingly difficult.   All the potential names
+we have available (plain identifiers, message names and strings) fall short:  direct references
+using plain identifiers don't' have the features we would like, messages incur code bloat
+and brittleness and string identifiers suffer from indirectness, runtime evaluation and more
+code bloat, and reifying also does not help.
 
+A solution would need to combine the expressiveness of direct references and the universality
+of polymorphic message sends with the extensibility and flexibility of string-based identifiers.
 
-\mpw{overall:  can't switch between them, would like expressiveness/convenience
-	(and performance) of direct access, polymorphism of messaging, 
-	user-extensibility + parametrized access of strings}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
@@ -362,7 +412,13 @@ the validity of accesses or even the well-formedness of the identifiers.
 \label{polymorphic-identifiers}
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
-\mpw{PIs allow direct access, polymorphic implementation and explicit manipulation of references}
+Polymorphic identifiers combine the techniques for resource access discussed in the previous 
+section by:
+\begin{enumerate}
+\item reifying the identifier lookup process, 
+\item making it user-extensible with open-implementation techniques and
+\item extending the syntax for identifiers to that of Universal Resource Identifiers (URIs)\cite{rfc3986}.
+\end{enumerate}
 
 
 \begin{figure}[htbp]
@@ -387,7 +443,7 @@ Polymorphic Identifiers replace the static identifiers found in programming lang
 a dynamic, user-extensible system for resource access, wether those resources exist
 on a stack frame or on the world wide web.
 
-Syntactically, \emph{polymorphic identifiers} are Universal Resouce Identifiers (URIs) \cite{rfc3986}.
+Syntactically, \emph{polymorphic identifiers} are Universal Resouce Identifiers (URIs) 
 The choice of URI syntax was pragmatic:
 they already exist, most people are familiar with them, they are widely used
 and come close enough to the universality claimed by their name as to make no difference.
