@@ -195,7 +195,7 @@ none of them is satisfactory in the end, either lacking capability and extensibi
 irreducible code-duplication, brittleness and simply cumbersome code.
 
 \subsection{Direct reference}
-
+\label{direct-reference}
 Like most programming language, our dialect of Smalltalk\cite{Goldberg1983} allows you to just write 
 an identifier by itself, and this will not just reference the slot that the identifier names, but also
 automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
@@ -349,7 +349,7 @@ universe setAnswer:deepThought theAnswer.
 
 Apart from the performance costs and the inability of the compiler to help
 even check well-formedness of string-based identifiers, there is the problem
-of context when using identifiers as references, illustrated in listing~\ref{string-reference}:
+of context when using identifiers as references, illustrated in listing~\ref{parametrized-reference}:
 we have the string-based identifier {\tt 'theAnswer'}, which we have placed into the
 variable {\tt answerReference}.   However, the reference is not self-contained, we
 have to know what exact type of container is used and use the appropriate message
@@ -358,13 +358,17 @@ for a dictionary and {\tt stringWithContentsOfFile:} for a file.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=string-reference,caption=Indeterminate references.]
+\begin{lstlisting}[style=numbers,label=parametrized-reference,caption=Indeterminate references.]
 answerReference := 'theAnswer'.
 deepThought valueForKey:answerReference.
 dictionary objectForKey:answerReference.
 NSString stringWithContentsOfFile:answerReference.
 \end{lstlisting}
 \end{figure}
+
+In fact, an expression like {\tt dictionary objectForKey:answerReference} can really
+be considered a compound identifier {\tt dictionary.<answerReference>} with
+a literal part ({\tt dictionary}) and a parametrized part ({\tt <answerReference>}).
 
 We could ameliorate the situation slightly by having a single universal protocol
 for string-identifier lookup, but that makes the actual message essentially
@@ -377,7 +381,7 @@ solution.
 \subsection{Reified identifiers}
 
 
-Another way of solving the context problem illustrated in listing~\ref{string-reference} 
+Another way of solving the context problem illustrated in listing~\ref{parametrized-reference} 
 is creating an actual reference object that carries the lookup
 semantics with it, but as shown in listing~\ref{reified-identifiers},
 this increases code bloat even more, and we still have to specify the initial identifier as string.
@@ -413,9 +417,11 @@ of polymorphic message sends with the extensibility and flexibility of string-ba
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
 The irreducible code duplication and frequent need to embed (mini-)languages into the
-source code as strings we saw in section~\ref{identifiers} suggests that the issue must be
+source code as strings we saw in section~\ref{identifiers} suggests that the issue needs to be
 solved at the linguistic level.
 
+Instead of using messaging or strings to get polymorphic resource access, polymorphic identifiers
+generalize direct references  just like messaging generalized function calls and made them polymorphic.
 Polymorphic identifiers combine the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
@@ -424,10 +430,21 @@ section by:
 \item making it user-extensible with open-implementation techniques.
 \end{enumerate}
 
-
+Listing~\ref{polymorphic-identifier-examples} recasts the examples from section~\ref{identifiers} using
+polymorphic identifiers.  Lines 1-4 are just direct references corresponding to section~\ref{direct-reference},
+with or without the (default) {\tt var} scheme that is used for in-memory variable accesss.  
+Lines 5-6 shows access to an object's attribute, which corresponds to section~\ref{message-access} and is
+mediated by the object, using message sends or other means at the object's discretion.  Whether messaging
+is used to implement the access is encapsulated as an implementation detail.  Lines 7-14 correspond
+to the string-reference examples in listing~\ref{string-identifiers}, line 15 to the reified URL reference
+in listing~\ref{reified-identifiers} and line 16 to the parametrized reference in listing~\ref{parametrized-reference}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=string-identifiers,caption=Some variants of polymorphic identifiers.]
+\begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Some variants of polymorphic identifiers.]
+theAnswer.
+theAnswer:=42.
+var:theAnswer.
+var:theAnswer:=42.
 var:deepThought/theAnswer.
 var:deepThought/theAnswer := 42.
 var:aDictionary/theAnswer.
@@ -439,47 +456,18 @@ file:theAnswer.txt := 42.
 file:answerImage.png.
 img:pictureOf42.
 http://www.depthought.com/theAnswer.
+var:aDictionary/{answerRef}
 \end{lstlisting}
 \end{figure}
 
-\mpw{Explain the list}
+Figure~\ref{scheme-eval} shows the generic identifier lookup of figure~\ref{identifier-lookup}
+extended to polymorphic identifiers.  The basic mechanism is still the same except for the
+addition of {\em scheme handlers} mediating the lookup process.  The left hand side of the
+diagram corresponds to the lookup in figure~\ref{identifier-lookup}, with the difference that
+the lookup that was previously hardwired into the language is now mediate by the {\tt var}
+scheme handler, which in turn was selected by the {\tt var} scheme that's part of the 
+polymorphic identifier.
 
-Polymorphic Identifiers replace the static identifiers found in programming languages with
-a dynamic, user-extensible system for resource access, wether those resources exist
-on a stack frame or on the world wide web.
-
-Syntactically, \emph{polymorphic identifiers} are Universal Resouce Identifiers (URIs) 
-The choice of URI syntax was pragmatic:
-they already exist, most people are familiar with them, they are widely used
-and come close enough to the universality claimed by their name as to make no difference.
-\mpw{No difference...expand a little}
-
-In fact, one way of regarding polymorphic identifiers is that they add direct language support
-for URIs to a language.  Although that view may be initially helpful, it is misleading in
-the end, because URIs are generally only used to specify resources outside of a process,
-whereas polymorphic identifiers unify and generalize both process-internal and -external identifiers.
-\mpw{Less of an apology}
-
-
-The unification means that both external and internal resources can be addressed in either
-identifier-oblivious or identifier-aware styles, the arbitrary distinction demonstrated in
-the previous sections is removed.
-
-\mpw{no longer needed}
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=first-polymorphic-examples,caption=\emph{Polymorphic identifiers} in simple expressions.]
-  http://www.acm.org/
-  joesBashrc := file:/Users/joe/.bashrc
-  file:/Users/mike/.bashrc := joesBashrc
-  pdf := MPWPDFFile pdfFileWithData: file:document.pdf.
-\end{lstlisting}
-\end{figure}
-
-Since polymorphic identifiers completely replace standard identifiers, they can be used
-in arbitrary expressions the same way one would expect of any other identifier.  
-Listing~\ref{first-polymorphic-examples} shows polymorphic identifiers used 
-standalone as a network access, in assignment statements that read or write disk files,
-and as an argument in a message expression.
 
 \begin{figure}[htbp]
 \label{scheme-eval}
@@ -489,14 +477,14 @@ and as an argument in a message expression.
 \end{center}
 \end{figure}
 
-Figure~\ref{scheme-eval} shows the components of the PI system:  the polymorphic
-identifiers themselves, the scheme-handlers which evaluate PIs and the references
-which mediate actual access to the resources.  Evaluation is a 4 step process:
+
+The right hand side of figure~\ref{scheme-eval} shows fetching of a web-resource from
+a remote server following the same four step lookup process:
 
 \begin{enumerate}
 \item a character sequence is turned into  polymorphic identifier,
 \item the scheme part of the polymorphic handler is used to select a scheme handler, in this case the {\tt http} handler,
-\item the scheme handler evaluates the {\em scheme-specific} part of the polymorphic identifier ({\tt //www.ietf.org/rfcs/1384.txt})
+\item the scheme handler evaluates the {\em scheme-specific} part of the polymorphic identifier ({\tt //deepThought.org/theAnswer})
 	 and returns a reference, in this case a web-reference,
 \item this (web-)reference mediates access to the actual resource, in this case translating requests to store or retrieve the 
 	resource into HTTP GET or PUT requests via an http client library.
@@ -519,7 +507,7 @@ directly encapsulate access to some sort of resource, while {\em composite schem
 take other schemes as arguments and modify their behavior.
 
 
-Users can define their own schemes and add that 
+Users can define their own schemes and add them 
 to the system, either by writing
 a new primitive scheme handler, by applying composite schemes or by writing new types
 of composite scheme handler.  Built-in schemes are not privileged over user-defined
@@ -536,7 +524,7 @@ become part of the language by adding them to a special scheme, the {\em scheme 
 \end{figure}
 
 Listing~\ref{scheme-scheme-http} shows the binding of the {\bf http} and {\bf scheme}
-handlers to actual scheme handlers that will subsequently process any polymorphic
+handlers to actual (primitive) scheme handlers that will subsequently process any polymorphic
 identifiers with the {\tt http} or {\tt file} schemes, respectively. 
 
 It is both possible and common to bind other handlers to those scheme
@@ -548,7 +536,7 @@ compatibly.
 Note that perfect interoperability is not guaranteed or required, so there is no notion
 of transparent remote access, for example.  Different scheme handlers will have different supported
 data types, different access modalities and different levels of quality of service.
-Polymorphic identifiers only remove syntactic incompatibility for accessing different types
+Polymorphic identifiers only remove accidental, mostly syntactic, incompatibility for accessing different types
 of resources when those resources are semantically compatible within the parameters
 of the requesting application.
 
