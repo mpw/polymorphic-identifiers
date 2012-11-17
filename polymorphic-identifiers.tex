@@ -412,13 +412,18 @@ of polymorphic message sends with the extensibility and flexibility of string-ba
 \label{polymorphic-identifiers}
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
+The irreducible code duplication and frequent need to embed (mini-)languages into the
+source code as strings we saw in section~\ref{identifiers} suggests that the issue must be
+solved at the linguistic level.
+
 Polymorphic identifiers combine the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
-\item reifying the identifier lookup process, 
-\item making it user-extensible with open-implementation techniques and
-\item extending the syntax for identifiers to that of Universal Resource Identifiers (URIs)\cite{rfc3986}.
+\item extending the syntax for identifiers to that of Universal Resource Identifiers (URIs)\cite{rfc3986},
+\item reifying the identifier lookup process and
+\item making it user-extensible with open-implementation techniques.
 \end{enumerate}
+
 
 
 \begin{figure}[htbp]
@@ -480,7 +485,7 @@ and as an argument in a message expression.
 \label{scheme-eval}
 \begin{center}
 \includegraphics[scale=0.45,page=1]{scheme-evaluation.pdf}
-\caption{Components of the PI system}
+\caption{Polymorphic Identifier lookup}
 \end{center}
 \end{figure}
 
