@@ -432,12 +432,14 @@ section by:
 
 Listing~\ref{polymorphic-identifier-examples} recasts the examples from section~\ref{identifiers} using
 polymorphic identifiers.  Lines 1-4 are just direct references corresponding to section~\ref{direct-reference},
-with or without the (default) {\tt var} scheme that is used for in-memory variable accesss.  
+the {\tt var} scheme is the default so lines 1 and 3 are equivalent, as are 2 and 4.
 Lines 5-6 shows access to an object's attribute, which corresponds to section~\ref{message-access} and is
 mediated by the object, using message sends or other means at the object's discretion.  Whether messaging
 is used to implement the access is encapsulated as an implementation detail.  Lines 7-14 correspond
-to the string-reference examples in listing~\ref{string-identifiers}, line 15 to the reified URL reference
-in listing~\ref{reified-identifiers} and line 16 to the parametrized reference in listing~\ref{parametrized-reference}.
+to the string-reference examples in listing~\ref{string-identifiers}, with for example line 12 storing the
+value {\tt 42} in the file {\tt theAnswer.text}.  Line 15 corresponds to the parametrized reference in listing~\ref{parametrized-reference}, we use curly brackets to indicate that part of an identifier is not a literal but
+a variable that needs to be retrieved itself and then inserted into the identifier.  Line 16 corresponds to the retrieval of a URL resource in listing~\ref{reified-identifiers}, while line 17 uses the {\tt ref} scheme to inhibit full evaluation, therefore just returning the
+URL reference rather than actually retrieving the value (References will be discussed more fully in section~\ref{references}).
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Some variants of polymorphic identifiers.]
@@ -455,15 +457,39 @@ file:theAnswer.txt.
 file:theAnswer.txt := 42.
 file:answerImage.png.
 img:pictureOf42.
-http://www.depthought.com/theAnswer.
 var:aDictionary/{answerRef}
+http://www.depthought.com/theAnswer.
+ref:http://www.depthought.com/theAnswer.
 \end{lstlisting}
 \end{figure}
 
-Figure~\ref{scheme-eval} shows the generic identifier lookup of figure~\ref{identifier-lookup}
+The very regular structure of the identifiers in listing~\ref{polymorphic-identifier-examples} strongly
+suggests interoperability, and this is in fact the case:  scheme names are not fixed but can be
+assigned at will, making it possible to substitute schemes.
+
+The polymorphic identifier system consists of three basic parts:
+\begin{enumerate}
+\item {\em Polymorphic Identifiers} themselves are URIs.  They are typically created by the 
+	compiler and have a structured runtime representation that can be manipulated
+	at a semantic level rather than as character strings, so consistency can be 
+	maintained.
+\item {\em Scheme handlers} manage a set of resources and, when registered,
+	 the namespace that is associated
+	with them.  They primarily turn {\em polymorphic identifiers} into {\em references} and
+	are created by developers, with a basic set provided by the environment.
+\item {\em References} are created and used transparently by the runtime and compiler
+	to mediate access to the specific resource identified by a {\em polymorphic identifier}.
+	
+	
+\end{enumerate}
+
+All three elements are plain objects that only become part of the language when registered
+with the compiler or runtime.
+
+Figure~\ref{scheme-eval} shows the generic identifier lookup of figure~\ref{identifier-eval}
 extended to polymorphic identifiers.  The basic mechanism is still the same except for the
 addition of {\em scheme handlers} mediating the lookup process.  The left hand side of the
-diagram corresponds to the lookup in figure~\ref{identifier-lookup}, with the difference that
+diagram corresponds to the lookup in figure~\ref{identifier-eval}, with the difference that
 the lookup that was previously hardwired into the language is now mediate by the {\tt var}
 scheme handler, which in turn was selected by the {\tt var} scheme that's part of the 
 polymorphic identifier.
@@ -479,7 +505,8 @@ polymorphic identifier.
 
 
 The right hand side of figure~\ref{scheme-eval} shows fetching of a web-resource from
-a remote server following the same four step lookup process:
+a remote server following the same four step lookup process, with the steps labeled by
+number:
 
 \begin{enumerate}
 \item a character sequence is turned into  polymorphic identifier,
@@ -501,31 +528,29 @@ for turning strings into PIs at runtime.
 
 \section{Schemes and scheme handlers}
 \label{schemes}
-Schemes are the main point of variability in the PI system
-and broadly fall into two categories:   {\em primitive schemes}(\ref{primitiveSchemes})
-directly encapsulate access to some sort of resource, while {\em composite schemes} 
-take other schemes as arguments and modify their behavior.
+The addition of {\em schemes} to identifiers in order to distinguish different kinds of resources
+and resource access, rather than having to revert to function calls or messages, represents
+the major addition that {\em polymorphic identifiers} bring to a programming language.
+Each scheme is backed by a {\em scheme handler}, which broadly fall into two categories:
+ {\em primitive schemes}(\ref{primitiveSchemes})
+directly encapsulate access to some sort of resource, while {\em composite schemes}\ref{compositeSchemes}
+can be used to build new schemes out of existing schemes, forming a little scheme algebra.
 
 
-Users can define their own schemes and add them 
-to the system, either by writing
-a new primitive scheme handler, by applying composite schemes or by writing new types
-of composite scheme handler.  Built-in schemes are not privileged over user-defined
-schemes except where necessary to avoid infinite recursion.
-
-Scheme handlers are normal objects that respond to a well-defined protocol.  They
-become part of the language by adding them to a special scheme, the {\em scheme scheme}.
+Scheme handlers are normal objects that respond to a well-defined protocol that can be
+accessed by user level code.  They
+become part of the language by binding them to particular scheme, after which
+any {\em polymorphic identifiers} with that scheme will be resolved by that particular scheme handler.
+Listing~\ref{scheme-scheme-http} shows how an {\tt URLSchemeResolver} instance is bound
+to the {\tt http} scheme and a {\tt FileSchemeResolver} bound to the {\tt file} scheme.  The table 
+binding schemes to resolvers is itself a scheme, the {\em scheme scheme}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=scheme-scheme-http,caption=Adding the http and file schemes.]
+\begin{lstlisting}[style=L,label=scheme-scheme-http,caption=Binding the http and file schemes.]
   scheme:http := URLSchemeResolver scheme.
   scheme:file := FileSchemeResolver scheme.
 \end{lstlisting}
 \end{figure}
-
-Listing~\ref{scheme-scheme-http} shows the binding of the {\bf http} and {\bf scheme}
-handlers to actual (primitive) scheme handlers that will subsequently process any polymorphic
-identifiers with the {\tt http} or {\tt file} schemes, respectively. 
 
 It is both possible and common to bind other handlers to those scheme
 names, for example an {\bf http} handler that implements a multi-level caching scheme
@@ -576,7 +601,6 @@ mediate access to the resource in question.  Primitive schemes
 subsume both what is normally considered variable access and 
 what is usually considered I/O, network and filesystem access.
 
-Primitive schemes are components with only an output port.
 
 \subsubsection{External resources}
 \label{externalResources}
@@ -586,6 +610,22 @@ The list of default scheme-handlers in listing~\ref{scheme-scheme} contains a fe
 retrieve the bytes from the web-server, FTP-server or file, and placing them on the left hand side of
 an assignment statement will perform an HTTP or FTP PUT request or write to a file system.
 
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=download-to-file,caption=Downloading an RFC to a file.]
+file:1738.txt:=http://www.rfc-editor.org/rfc/rfc1738.txt
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
+file:1738.txt:=http://www.rfc-editor.org/rfc/rfc1738.txt
+\end{lstlisting}
+\end{figure}
+
+
+\mpw{references for metadata}
+
+\mpw{bridges gap to scripting languages, file copy, http access, }
 
 
 \subsubsection{In-memory resources}
