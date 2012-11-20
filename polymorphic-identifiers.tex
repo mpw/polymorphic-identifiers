@@ -491,7 +491,7 @@ Figure~\ref{scheme-eval} shows the generic identifier lookup of figure~\ref{iden
 extended to polymorphic identifiers.  The basic mechanism is still the same except for the
 addition of {\em scheme handlers} mediating the lookup process.  The left hand side of the
 diagram corresponds to the lookup in figure~\ref{identifier-eval}, with the difference that
-the lookup that was previously hardwired into the language is now mediate by the {\tt var}
+the lookup that was previously hardwired into the language is now mediated by the {\tt var}
 scheme handler, which in turn was selected by the {\tt var} scheme that's part of the 
 polymorphic identifier.
 
@@ -547,7 +547,7 @@ to the {\tt http} scheme and a {\tt FileSchemeResolver} bound to the {\tt file} 
 binding schemes to resolvers is itself a scheme, the {\em scheme scheme}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=scheme-scheme-http,caption=Binding the http and file schemes.]
+\begin{lstlisting}[style=L,label=scheme-scheme-http,caption=Binding scheme handlers to the http and file schemes.]
   scheme:http := URLSchemeResolver scheme.
   scheme:file := FileSchemeResolver scheme.
 \end{lstlisting}
@@ -650,11 +650,15 @@ file value.
 \end{lstlisting}
 \end{figure}
 
-Typing {\tt stcat http://www.rfc-editor.org/rfc/rfc1738.txt} will display RFC 1738, while 
-{\tt stcat ~/.bashrc} will print your bash startup script, assuming you are a user of the
+To load RFC 1738 from the rfc-editor web site, type  {\tt stcat http://www.rfc-editor.org/\-rfc/\-rfc1738.txt}, whereas 
+the command {\tt stcat \~\//.bashrc} will display your bash startup script, assuming you are a user of the
 bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
 your home directory.
 
+With a current Unix shell all three of these resource types would have required a different
+command or access syntax:   {\tt curl http://www.rfc-editor.org\-/rfc/\-rfc1738.txt} for the
+web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
+variable, as would using Objective-Smalltalk without polymorphic identifiers .
 
 The {\tt scurl} command in listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
 it needs to manipulate the identifier.  The {\tt scurl} command
@@ -692,6 +696,7 @@ messages.
 
 Although adding file and web references as integrated, first class objects to a programming
 language is useful, it solves only a small part of the problems from section~\ref{identifiers}.
+In addition, we also wish to integrate classical variable and attribute access.
 
 In-memory stores such as the local execution context (often the stack), object instance
 variables, thread-local and global heap variables are also managed by scheme handlers
@@ -712,16 +717,25 @@ once for access to an attribute and then returns a reference.   This reference c
 use message sending, keyed access or even a direct offset for very fast
 access without requiring a sophisticated JIT compiler.
 
-There is also a {\tt global:} scheme and a {\tt class:} scheme that separates
-the namespace for instances for that for classes. 
+There is also a {\tt global:} scheme for globals and a {\tt class:} scheme that separates
+the namespace for instances from that for classes.  Having separate schemes for
+these different storage classes is useful when wanting to disambiguate,
+but can become cumbersome in itself.  To alleviate this, the composite
+{\tt var:} scheme combines these schemes into a single namespace
+with prioritized lookup similar to conventional languages.  We will take
+a close look at composite schemes in the next section.  
 
+The {\tt var} scheme is also usually bound as the resolver for the {\tt default}
+scheme, which is assigned to identifiers that don't specify their scheme.
+Combining the sequential lookup of the {\tt var:} scheme and the {\tt default}
+scheme allows us to implement the usually hard-coded identifier lookup
+rules for plain identifiers in Smalltalk and other languages using
+our toolbox of scheme handlers.
 
-
-A scheme that straddles the fence between an in-memory and an external 
-scheme is the {\tt env} scheme, which encapsulates access to the Unix
-environment via the {\tt getnv()} and {\tt putenv()} functions.  Although 
-values are not stored in persistence storage, they can outlast the
-current process and also need to be serialized into character sequences.
+In addition to the schemes that recreate existing variable lookup, a number
+of other useful scheme handlers have been implemented so far.  We've
+already seen the {\tt env:} scheme, which provides access to Unix
+environment variables.  
 
 A further scheme handler that is not pre-loaded but available for defining
 custom schemes is the {\tt SiteMap}.  A {\tt SiteMap} stores arbitrary objects
@@ -731,7 +745,7 @@ in memory in a tree structure that acts a bit like a memory filesystem.
 \label{compositeSchemes}
 Composite schemes  create a new scheme by combining one or 
 more existing schemes with some processing to create new behavior
-or a new type of resource store.  
+or a new type of resource store. 
 
  Schemes used in programming 
 are frequently composites of various primitive schemes, for example
@@ -743,7 +757,7 @@ raw http access with two caches, a file cache and an in-memory cache.
 \begin{figure}[htbp]
 \begin{center}
 \includegraphics[scale=0.5,page=1]{cached-http.pdf}
-\caption{A caching http stack made from composed schemes}
+\caption{Typical http scheme handler with caching, composed from simpler schemes}
 \label{fig:http-cached}
 \end{center}
 \end{figure}
@@ -752,16 +766,20 @@ raw http access with two caches, a file cache and an in-memory cache.
 \subsubsection{Filter schemes}
 
 Filter schemes take a single source scheme and apply processing to either
-the identifiers passed to the source, or the read from or written to the source.
+the identifiers passed to the source, or the data read from or written to the source.
 
+An example of a filter that just modifiers the identifier is the {\em relative}
+scheme, which as the name implies interprets identifiers relative to a base
+identifier in its source scheme, so for example a specific directory in the
+filesystem.  
 
-One example is the relative scheme resolver, which takes a base-binding
-and evaluates its references relative to that base.  Listing~\ref{rfc-scheme} shows
-how to use a relative scheme resolver to build a scheme that can directly
-reference Internet Engineering Task Force Request For Comments (IETF RFCs).
-The end effect is that we can hide the actual location and access method for
-the IETF RFCs behind a scheme so we can access those RFCs directly and
-creating a URI scheme that is close to a URN.
+The caching http resolver in figure~\ref{fig:http-cached} uses an instance
+of a relative scheme to store its disk cache in a specific directory, rather
+than the root of the filesystem.  Another common use for relative schemes
+is to provide an abstract name space that is then mapped to one
+or more  concrete implementations, listing~\ref{rfc-scheme} shows
+an {\tt rfc:} scheme that is implemented by looking at the {\tt datatracker.ietf.org}
+website, but could just as easily use a local filesystem.
 
 
 \begin{figure}[htbp]
@@ -772,10 +790,16 @@ creating a URI scheme that is close to a URN.
 \end{lstlisting}
 \end{figure}
 
+A filter scheme that modifies data while leaving URL alone is the {\em MIME-Type mapper}.
+The mapper is parametrized with routines that create objects from data with specific
+mime-types.  
+
+
 \subsubsection{Binary Scheme}
 
-\mpw{do sequential lookup here, for Fielding's IETF/RFC example
-	and lookup rules for variables (local, instance, ... )}
+Binary composite schemes have two source schemes and scheme-specific logic
+to determine which of the source schemes to use for reading and writing data.
+
 
 Another is a cache scheme, which has two schemes as its arguments,
 the base and the cache.  When accessed, the cache scheme first
