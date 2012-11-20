@@ -196,7 +196,8 @@ irreducible code-duplication, brittleness and simply cumbersome code.
 
 \subsection{Direct reference}
 \label{direct-reference}
-Like most programming language, our dialect of Smalltalk\cite{Goldberg1983} allows you to just write 
+Like most programming language, our dialect of Smalltalk\cite{Goldberg1983}, called
+{\em Objective-Smalltalk} allows you to just write 
 an identifier by itself, and this will not just reference the slot that the identifier names, but also
 automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
 the assignment operator {\tt :=}.    Assuming I have a variable that contains {\tt theAnswer} to 
@@ -532,8 +533,8 @@ The addition of {\em schemes} to identifiers in order to distinguish different k
 and resource access, rather than having to revert to function calls or messages, represents
 the major addition that {\em polymorphic identifiers} bring to a programming language.
 Each scheme is backed by a {\em scheme handler}, which broadly fall into two categories:
- {\em primitive schemes}(\ref{primitiveSchemes})
-directly encapsulate access to some sort of resource, while {\em composite schemes}\ref{compositeSchemes}
+ {\em primitive schemes} (section~\ref{primitiveSchemes})
+directly encapsulate access to some sort of resource, while {\em composite schemes} (section~\ref{compositeSchemes})
 can be used to build new schemes out of existing schemes, forming a little scheme algebra.
 
 
@@ -593,11 +594,17 @@ scheme-resolver with the following schemes: (
 \end{lstlisting}
 \end{figure}
 
+To illustrate the concepts, we will now present a few common scheme handlers and how they can be
+used to solve common problems.  While no one scheme handler is required, at least conceptually,
+the scheme handlers we present will try to demonstrate what sorts of schemes can be created,
+how they can be combined into a usable system and finally used to solve problems.
+
 \subsection{Primitive Schemes}
 \label{primitiveSchemes}
 
 Primitive schemes are the endpoints for resource access, they directly
-mediate access to the resource in question.  Primitive schemes
+mediate access to a specific kind of resource, often using a separate
+library such as {\tt libwww} or {\tt libcurl}.  Primitive schemes
 subsume both what is normally considered variable access and 
 what is usually considered I/O, network and filesystem access.
 
@@ -608,54 +615,107 @@ what is usually considered I/O, network and filesystem access.
 The list of default scheme-handlers in listing~\ref{scheme-scheme} contains a few familiar URI schemes:
 {\tt http} and {\tt https}, {\tt ftp}, {\tt file}.   These behave in the expected way:   referencing them in an expression will
 retrieve the bytes from the web-server, FTP-server or file, and placing them on the left hand side of
-an assignment statement will perform an HTTP or FTP PUT request or write to a file system.
+an assignment statement will perform an HTTP or FTP PUT request or write to a file system. 
+ 
+Listing~\ref{download-to-file} shows how an RFC can be downloaded directly from a web-site
+to a file, or how the web page could be updated given the right permissions, and demonstrates how integrating both filesystem access and the web as first class datatypes
+goes some way to closing the gap between application programming languages and so called
+scripting languages.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=download-to-file,caption=Downloading an RFC to a file.]
+\begin{lstlisting}[style=numbers,label=download-to-file,caption=Downloading an RFC to a file.]
 file:1738.txt:=http://www.rfc-editor.org/rfc/rfc1738.txt
+http://www.rfc-editor.org/rfc/rfc1738.txt:='New RFC'.
 \end{lstlisting}
 \end{figure}
 
+In fact,  Objective-Smalltalk is used as a Unix scripting language using the {\tt stsh} command
+interpreter for interactive and batch use.  
+
+The {\tt stcat} script in listing~\ref{stcat} prints an arbitrary resource to standard out, 
+similar to the way the Unix {\tt cat} command is used to display files\footnote{{\tt stcat} only 
+displays a single resource rather than concatenating several.}.
+After the ``hashbang'' in line 1 {\tt stcat} is declared as a method taking the {\tt ref} argument {\tt file} 
+in line 2.
+A {\tt ref} parameter is a polymorphic identifier that is partially evaluated to the reference stage,
+but without retrieving the value.  Retrieving the value of the {\tt file} parameter is done in line 3,
+and the result is automatically output to {\tt stdout} by {\tt stsh} because the declaration in line
+2 indicates (by default) that {\tt stcat} has a return value.
+
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
-file:1738.txt:=http://www.rfc-editor.org/rfc/rfc1738.txt
+\begin{lstlisting}[style=numbers,label=stcat,caption={\tt stcat} prints contents of any resource.]
+#!/usr/local/bin/stsh
+#-stcat:<ref>file
+file value.
 \end{lstlisting}
 \end{figure}
 
+Typing {\tt stcat http://www.rfc-editor.org/rfc/rfc1738.txt} will display RFC 1738, while 
+{\tt stcat ~/.bashrc} will print your bash startup script, assuming you are a user of the
+bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
+your home directory.
 
-\mpw{references for metadata}
 
-\mpw{bridges gap to scripting languages, file copy, http access, }
+The {\tt scurl} command in listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
+it needs to manipulate the identifier.  The {\tt scurl} command
+is the {\tt stsh} variant of the {\tt curl -O} command for downloading files from the web, typing
+{\tt scurl http://www.rfc-editor.org/rfc/rfc1738.txt} will download the specified web resource
+to the current directory as the file {\tt rfc1738.txt}.
 
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=scurl,caption={\tt scurl} downloads files.]
+#!/usr/local/bin/stsh
+#-<void>scurl:<ref>urlref
+fileName:= urlref identifier lastPathComponent.
+file:{fileName} := urlref value.
+\end{lstlisting}
+\end{figure}
+
+After the ``hash-bang'' specifying the command interpreter in the first line, line 2 declares
+the script as a method name {\tt scurl} with the single argument {\tt urlref} and no return
+value.  The {\tt urlref} parameter is declared as a {\tt ref}, meaning the string passed will
+be interpreted as a polymorphic identifier that's evaluated to its reference but not further.
+We then retrieve the last component of the polymorphic identifier into the {\tt fileName}
+variable and finally retrieve the value of the {\tt urlref} and store it into the file that
+the {\tt fileName} variable indicates.
+
+Of course the {\tt scurl} command doesn't just work on web references, but just as well
+on files, so typing the command {\tt scurl \~\//.bashrc} will copy your bash resource from your home directory
+to the local directory.
+
+Access to metadata for a resource, such as availability, size or descendant nodes
+is accomplished via the reference, which can support both common and scheme-specific
+messages.
 
 \subsubsection{In-memory resources}
 \label{inmemory}
 
-So far, we have simply added file and Web-access via URLs to a 
-Smalltalk-like programming language.  However it turns out that we can actually generalize
-this approach to all identifier usage, including normal variable access, using
-two additional schemes:  the {\bf var} scheme and the {\bf default} scheme.
+Although adding file and web references as integrated, first class objects to a programming
+language is useful, it solves only a small part of the problems from section~\ref{identifiers}.
 
-The {\bf var} scheme refers to in-memory variables, so the expression
- {\bf var:anObject} references the
-local variable {\bf anObject}.   Compound paths can be given and are resolved in
-cooperation with the object.
-
+In-memory stores such as the local execution context (often the stack), object instance
+variables, thread-local and global heap variables are also managed by scheme handlers
+and made available using polymorphic identifiers.  Listing~\ref{local-variables} shows
+a couple of examples, {\tt ivar:} for instance variable access, {\tt local:} for the current
+method context (``stack''), and {\tt thread:} for thread local variables.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=in-memory-path,caption=In-memory access path.]
-  myColor := var:robot/head/leftEye/color.
-  var:robot/head/leftEye/color := myColor.
+\begin{lstlisting}[style=numbers,label=local-variables,caption=Different memory variables.]
+local:tempAnswer := ivar:myAnswer.
+thread:deepThought/privateAnswer := local:tempAnswer.
 \end{lstlisting}
 \end{figure}
 
-Listing~\ref{in-memory-path} recasts the structured access from 
-Listing~\ref{non-local-reference} using \emph{polymorphic identifiers}.  Unlike the variant
-with chained message-send, the operations are symmetric in the case of \emph{polymorphic identifiers}.
+All these schemes have different starting points but then allow path-based access
+that is mediated by the objects in question.   Each object / class is asked at least
+once for access to an attribute and then returns a reference.   This reference can
+use message sending, keyed access or even a direct offset for very fast
+access without requiring a sophisticated JIT compiler.
 
-The {\tt thread} scheme encapsulates thread-local variables using the {\tt pthread} thread
-local storage API and the {\tt dyld} scheme encapsulates dynamic access to
-named variables via the {\tt dlsym} family of functions.
+There is also a {\tt global:} scheme and a {\tt class:} scheme that separates
+the namespace for instances for that for classes. 
+
+
 
 A scheme that straddles the fence between an in-memory and an external 
 scheme is the {\tt env} scheme, which encapsulates access to the Unix
@@ -668,12 +728,32 @@ custom schemes is the {\tt SiteMap}.  A {\tt SiteMap} stores arbitrary objects
 in memory in a tree structure that acts a bit like a memory filesystem.
 
 \subsection{Composite Schemes}
-
+\label{compositeSchemes}
 Composite schemes  create a new scheme by combining one or 
-more existing schemes and applying processing to the identifiers, retrieved
-resources or both.
+more existing schemes with some processing to create new behavior
+or a new type of resource store.  
 
-\subsubsection{Relative Scheme}
+ Schemes used in programming 
+are frequently composites of various primitive schemes, for example
+the {\tt http} scheme will typically not actually be the raw http access
+scheme provider, but a composite like the one in figure~\ref{fig:http-cached} combining
+raw http access with two caches, a file cache and an in-memory cache.
+
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[scale=0.5,page=1]{cached-http.pdf}
+\caption{A caching http stack made from composed schemes}
+\label{fig:http-cached}
+\end{center}
+\end{figure}
+
+
+\subsubsection{Filter schemes}
+
+Filter schemes take a single source scheme and apply processing to either
+the identifiers passed to the source, or the read from or written to the source.
+
 
 One example is the relative scheme resolver, which takes a base-binding
 and evaluates its references relative to that base.  Listing~\ref{rfc-scheme} shows
@@ -710,14 +790,6 @@ relative schemes defined here, we can create the
 caching behavior of a typical http stack just by composing
 pre-existing schemes, as shown in figure~\ref{http-cached}.
 
-
-\begin{figure}[htbp]
-\label{http-cached}
-\begin{center}
-\includegraphics[scale=0.5,page=1]{cached-http.pdf}
-\caption{A caching http stack made from composed schemes}
-\end{center}
-\end{figure}
 
 The code to implement this composed, caching http scheme is not all 
 that different from the diagram.  It is shown in listing~\ref{http-composed-listing}.
@@ -761,10 +833,10 @@ external resource schemes such as {\tt file} or {\tt http} into domain objects
 using blocks keyed by mime-type.  
 
 \begin{figure}[htbp]
-\caption{Adding conversion to the caching http-stack}
-\label{http-cached-converted}
 \begin{center}
 \includegraphics[scale=0.5,page=1]{cached-and-mapped-http.pdf}
+\caption{Adding conversion to the caching http-stack}
+\label{http-cached-converted}
 \end{center}
 \end{figure}
 
@@ -785,10 +857,10 @@ shown in figure~\ref{http-converted-cached}.
 
 \begin{figure}[htbp]
 \caption{Caching the converted object}
-\label{http-converted-cached}
 \begin{center}
 \includegraphics[scale=0.5,page=1]{mapped-and-cached-http.pdf}
 \end{center}
+\label{http-converted-cached}
 \end{figure}
 
 Listing~\ref{http-converted-cached-listing} again closely follows the
