@@ -170,10 +170,10 @@ Identifiers that name resources come in many different forms ranging from local,
 global or instance variables to names for disk files or URIs pointing to network resources.
 
 \begin{figure}[htbp]
-\label{identifier-eval}
 \begin{center}
 \includegraphics[scale=0.55,page=1]{basic-storage.pdf}
 \caption{Generic identifier lookup}
+\label{identifier-eval}
 \end{center}
 \end{figure}
 
@@ -194,9 +194,9 @@ finally reified object access.   While each of these approaches solves a part of
 none of them is satisfactory in the end, either lacking capability and extensibility or leading to
 irreducible code-duplication, brittleness and simply cumbersome code.
 
-\subsection{Direct reference}
+\subsection{Plain identifiers}
 \label{direct-reference}
-Like most programming language, our dialect of Smalltalk\cite{Goldberg1983}, called
+Like most programming languages, our dialect of Smalltalk\cite{Goldberg1983}, called
 {\em Objective-Smalltalk} allows you to just write 
 an identifier by itself, and this will not just reference the slot that the identifier names, but also
 automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
@@ -240,7 +240,7 @@ by taking the address using the {\tt \&} operator ({\tt \&theAnswer}).   However
 again a direct memory reference without any encapsulation or options of providing 
 alternate implementations in the future.  Smalltalk once again prohibits such access.
 
-\subsection{Message-based access}
+\subsection{Messages as identifiers}
 
 Encapsulation and the potential for polymorphic behavior can be achieved by using
 messages to access the value in question.  Listing~\ref{variable-lookup} shows 
@@ -265,9 +265,7 @@ representation of an identifier and two verbs, {\tt get} and {\tt set},
 this is multiplied out for each and every visible attribute of 
 each and every class. 
  
-The code duplication doesn't stop with preventing the factoring of the get and set 
-actions for each
-named resource:  we also 
+This entanglement means we  
 must provide two trivial accessor methods like the ones in listing~\ref{trivial-accessors} for each actual resource we wish
 to access.  Studies show that around 5\% of Java code consists of such trivial accessors\cite{Spinellis:2002:MPC:510857.510868}, and although the authors of said study argue that this is {\em not} enough
 to warrant special treatment, it should be noted that the prevalence of actual polymorphic 
@@ -289,20 +287,69 @@ to make changes:   if we want to globally change how the {\tt set}
 operation works, for example, either because we want a different storage
 mechanism or some additional behavior,
 we must manually change the trivial accessor for every attribute to which
-we want to apply this change, because we combined the attribute and
-the generic operation into one attribute-specific operation.
-\mpw{a little cumbersome}
+we want to apply this change.
 
 
 As long as we can compute messages to send at runtime,
 passing references to message-accessed resources is easier than with
-direct references.  However, it still poses challenges, because we have decomposed
-access to the resource into two distinct messages whose only relationship is by 
-convention.  The best we can do when we want to access the resource
-is an object that is either initialized with both selectors or can derive them
-programmatically (by string manipulation) from the resource name.
+direct references.  However, not having a factored representation also means
+duplication at call sites, because 
+access to the resource has been split into two distinct messages whose only relationship is by 
+convention.   Figure~\ref{ui-widget-msg-access} shows the example of a text field
+that interacts generically interact with a string attribute of an object, in 
+this case the {\tt theAnswer} attribute of a {\tt DeepThought} object.
 
-\subsection{String-based identifiers}
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[scale=0.52,page=1]{ui-widget-generic-access-messages.pdf}
+\caption{Widget with parametrized access to DeepThought's {\tt theAnswer} attribute using messages}
+\label{ui-widget-msg-access}
+\end{center}
+\end{figure}
+
+In order to handle this reference to an attribute, we need to store the base object,
+the getter and the setter messages, and also provide all these elements when
+initializing the object.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=parametrized-message-access,caption=Parametrized access via messages.]
+base performSelector:self setter 
+	  withObject:self getContents.
+self setContent:(base performSelector:self getter)
+\end{lstlisting}
+\end{figure}
+
+Apart from the problems with duplications, using messages as the interface for resource
+access also poses difficulties with multi-element access paths.  These need to be decomposed
+into multiple distinct message sends, and references such as the widget in figure~\ref{ui-widget-msg-access}
+would need to be extended to arrays of message selectors.
+
+\subsection{Strings as identifiers}
+
+Since the setter and getter messages are related, if only by convention, one way of
+reducing the duplication seen in the previous section is using a string to specify
+the attribute in question and then derive the getter and setter methods dynamically,
+an approach used by Cocoa's {\em Key Value Coding} (KVC) protocol.
+
+KVC adds two methods to every object, {\tt valueForKey:} and {\tt setValue:forKey:},
+with the key parameter being the string that's used as an identifier.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=kvc-literal-string,caption=Strings used with {\em Key Value Coding} (KVC).]
+deepThought valueForKey:'theAnswer'.
+deepThought setValue:42 forKey:theAnswer.
+\end{lstlisting}
+\end{figure}
+
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[scale=0.52,page=1]{ui-widget-generic-access-messages.pdf}
+\caption{Widget with parametrized access to DeepThought's {\tt theAnswer} attribute using messages}
+\label{ui-widget-msg-access}
+\end{center}
+\end{figure}
+
 
 For the large number of use cases not covered by either direct reference or
 message-based access, string-based identifiers interpreted at runtime 
@@ -319,14 +366,12 @@ NSDefaults standardUserDefaults
 	 objectForKey:'theAnswer'.
 NSDefaults standardUserDefaults
 	 setObject:'42' forKey:'theAnswer'.
-NSString stringWithContentsOfFile:'theAnswer.txt'
-'42' writeToFile:'theAnswer.txt' atomically:YES.
-UIImage imageWithContentsOfFile:'answerImage.png'.
-UIImage imageNamed:'pictureOf42'.
 \end{lstlisting}
 \end{figure}
 
-String-based identifiers are used for dynamic access to objects (1,2), 
+String-based identifiers are used for dynamic access to objects (1,2)
+\footnote{Other Smalltalks use {\tt basicAt:}, but {\tt valueForKey:} will use
+messaging if available}, 
 in dynamic, run-time extensible data structures such as
 dictionaries (3,4)  for custom storage mechanisms such as persistent
 user defaults (5-8), for generic (9,10) or type-specific (11) file access, cached
@@ -359,6 +404,18 @@ for a dictionary and {\tt stringWithContentsOfFile:} for a file.
 
 
 \begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=string-file-identifiers,caption=Files of different types accessed using string identifiers.]
+NSData dataWithContentsOfFile:'theAnswer.txt'
+NSString stringWithContentsOfFile:'theAnswer.txt'
+'42' writeToFile:'theAnswer.txt' atomically:YES.
+UIImage imageWithContentsOfFile:'answerImage.png'.
+UIImage imageNamed:'pictureOf42'.
+\end{lstlisting}
+\end{figure}
+
+\mpw{introduce file access}
+
+\begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=parametrized-reference,caption=Indeterminate references.]
 answerReference := 'theAnswer'.
 deepThought valueForKey:answerReference.
@@ -378,8 +435,22 @@ to somehow differentiate the lookup scope within the string identifier.   The
 {\em schemes} used in URIs to differentiate lookup scopes are a potential
 solution.
 
+\mpw{issue: usually have relative paths, but because strings are dumb, we 
+	can't express that, so have to perform string processing at call-site
+	or duplicate code some more, start with RFC, but images are worse?}
 
 \subsection{Reified identifiers}
+
+
+Alternatively, we can encapsulate these three
+attributes in a separate reference object, such as a {\em ValueHolder}, but this 
+object must also be initialized with those parameters. 
+
+
+\mpw{also need ValueHolder here}
+
+\mpw{more on URLs, matrix of  type  x store, code duplication either in convenience methods 
+	or call sites, UIImage etc., that's why we need polymorphism!}
 
 
 Another way of solving the context problem illustrated in listing~\ref{parametrized-reference} 
@@ -399,12 +470,12 @@ NSData dataWithContentsOfURL:answerURL.
 
 \subsection{Discussion}
 
-Although resource access is one of the most basic operations in a programming, combining
+Although resource access is one of the most basic operations in a programming, combining it
 with traits we have come to expect from object-orientation such as encapsulation, polymorphic
 behavior and user-extensibility turns out to be surprisingly difficult.   All the potential names
 we have available (plain identifiers, message names and strings) fall short:  direct references
 using plain identifiers don't' have the features we would like, messages incur code bloat
-and brittleness and string identifiers suffer from indirectness, runtime evaluation and more
+and brittleness, string identifiers suffer from indirectness, runtime evaluation and more
 code bloat, and reifying also does not help.
 
 A solution would need to combine the expressiveness of direct references and the universality
@@ -624,8 +695,8 @@ scripting languages.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=download-to-file,caption=Downloading an RFC to a file.]
-file:1738.txt:=http://www.rfc-editor.org/rfc/rfc1738.txt
-http://www.rfc-editor.org/rfc/rfc1738.txt:='New RFC'.
+file:rfc1738:=http://datatracker.ietf.org/doc/rfc1738.
+http://datatracker.ietf.org/doc/rfc1738:='New RFC'.
 \end{lstlisting}
 \end{figure}
 
@@ -650,21 +721,21 @@ file value.
 \end{lstlisting}
 \end{figure}
 
-To load RFC 1738 from the rfc-editor web site, type  {\tt stcat http://www.rfc-editor.org/\-rfc/\-rfc1738.txt}, whereas 
+To load RFC 1738 from the rfc-editor web site, type  {\tt stcat http://datatracker.ietf.org/doc/rfc1738}, whereas 
 the command {\tt stcat \~\//.bashrc} will display your bash startup script, assuming you are a user of the
 bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
 your home directory.
 
 With a current Unix shell all three of these resource types would have required a different
-command or access syntax:   {\tt curl http://www.rfc-editor.org\-/rfc/\-rfc1738.txt} for the
+command or access syntax:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
 web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
 variable, as would using Objective-Smalltalk without polymorphic identifiers .
 
 The {\tt scurl} command in listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
 it needs to manipulate the identifier.  The {\tt scurl} command
 is the {\tt stsh} variant of the {\tt curl -O} command for downloading files from the web, typing
-{\tt scurl http://www.rfc-editor.org/rfc/rfc1738.txt} will download the specified web resource
-to the current directory as the file {\tt rfc1738.txt}.
+{\tt scurl http://http://datatracker.ietf.org/doc/rfc1738} will download the specified web resource
+to the current directory as the file {\tt rfc1738}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=scurl,caption={\tt scurl} downloads files.]
@@ -764,7 +835,7 @@ raw http access with two caches, a file cache and an in-memory cache.
 
 
 \subsubsection{Filter schemes}
-
+\label{filterschemes}
 Filter schemes take a single source scheme and apply processing to either
 the identifiers passed to the source, or the data read from or written to the source.
 
@@ -779,82 +850,83 @@ than the root of the filesystem.  Another common use for relative schemes
 is to provide an abstract name space that is then mapped to one
 or more  concrete implementations, listing~\ref{rfc-scheme} shows
 an {\tt rfc:} scheme that is implemented by looking at the {\tt datatracker.ietf.org}
-website, but could just as easily use a local filesystem.
+website.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=rfc-scheme,caption=Retrieving RFC 2396 (URI Syntax) via custom rfc: scheme.]
+\begin{lstlisting}[style=L,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
   base := ref:http://datatracker.ietf.org/doc/.
-  scheme:rfc := RelScheme schemeWithBase:base.
-  uriSyntax := rfc:rfc2396.
+  scheme:rfc := RelativeScheme schemeWithBase:base.
 \end{lstlisting}
 \end{figure}
+
+Once the {\tt rfc} scheme from listing~\ref{rfc-scheme} is defined, client code can 
+retrieve a specific RFC using the identifier {\tt  rfc:rfc2396}.  Having abstracted
+from the actual store for client code, we can now easily change it, for example
+substituting a different server, a directory in a local filesystem or even an 
+in-memory store.
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
+scheme:rfc:=ref:http://datatracker.ietf.org/doc/ asScheme.
+\end{lstlisting}
+\end{figure}
+
+Since relative schemes are very common and usually based on a reference, the
+{\tt asScheme} convenience operation on references creates a relative scheme, as shown
+for the {\tt rfc:} scheme in listing~\ref{rfc-scheme-convenience}.
 
 A filter scheme that modifies data while leaving URL alone is the {\em MIME-Type mapper}.
 The mapper is parametrized with routines that create objects from data with specific
 mime-types.  
 
 
-\subsubsection{Binary Scheme}
+\subsubsection{Binary Schemes}
 
 Binary composite schemes have two source schemes and scheme-specific logic
 to determine which of the source schemes to use for reading and writing data.
 
+A very simple {\em binary scheme} just performs sequential lookup:  try to
+retrieve the value from the first source scheme, and if that fails try the second.
+The {\tt var:} scheme from section~\ref{inmemory}  replicates variable/identifier
+lookup rules using a simple sequence of sequential lookup schemes parametrized
+with the underlying storage schemes.
 
-Another is a cache scheme, which has two schemes as its arguments,
-the base and the cache.  When accessed, the cache scheme first
-checks the scheme that was designated as its cache.  If the resource
-is found there, it is returned.   If the resource is not found in the cache
-it is retrieved from the base scheme and placed in the cache in addition
-to being returned.
-
-Using the http- and file-schemes from section~\ref{externalResources}, the
-{\tt SiteMap} from section~\ref{inmemory} and the cache and
-relative schemes defined here, we can create the 
-caching behavior of a typical http stack just by composing
-pre-existing schemes, as shown in figure~\ref{http-cached}.
-
+By adding a write-back capability to the sequential lookup scheme, where an element
+retrieved from the second source gets written to the first source, we get a simple {\em cache} scheme.  
+The caching http scheme we saw earlier in figure~\ref{fig:http-cached} uses two cache
+separate cache schemes, one with an in-memory cache (the {\tt SiteMap} from section~\ref{inmemory})
+and the other with a file cache that consists of a relative scheme (section~\ref{filterschemes}) 
+designating a specific directory in the filesystem.
 
 The code to implement this composed, caching http scheme is not all 
-that different from the diagram.  It is shown in listing~\ref{http-composed-listing}.
+that different from the diagram.  It is shown in listing~\ref{http-composed-listing}:  
+starting with the URL resolver (1) and the {\tt /tmp} directory for our cache (2), we construct
+a file cache (3) an in-memory cache (4) and then hook up all these pieces together
+in sequence using the {\tt ->} connector (5).
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=http-composed-listing,caption=Code for caching http stack.]
-rawhttp := scheme:http.
-tempdir := ref:file/tmp/ asScheme.
+\begin{lstlisting}[style=numbers,label=http-composed-listing,caption=Code for caching http stack.]
+rawhttp := URLSchemeResolver scheme.
+tempdir := ref:file:/tmp/ asScheme.
 filecache := CacheScheme cacheWithScheme: tempdir.
 memcache := CacheScheme memoryCache.
-scheme:http := 
-
- rawhttp -> filecache -> memcache.
+scheme:http := rawhttp -> filecache -> memcache.
 \end{lstlisting}
 \end{figure}
 
-The {\tt ->} connector composes components by their default input
-and output ports.
+If we want our {\tt http:} scheme to retrieve domain objects, we simple add a MIME-mapper
+to the end as shown in listing~\ref{http-cached-converted-listing} and figure~\ref{http-cached-converted}.
 
-The cache-scheme is really just a special case of a binary composite scheme,
-which can be also be used to implement copy-on-write behavior similar to
-VPRI's world concept\cite{vpriworlds}.
-
-A {\em filter-scheme} applies custom processing to the identifiers going to
-its source scheme and the data flowing in and out.  The block filter-scheme
-takes a block for each 
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Caching and converting.]
 mapper := MIMEMapper defaultMapper.
-scheme:http := 
-
- rawhttp -> filecache -> memcache -> mapper.
+scheme:http := rawhttp->filecache->memcache->mapper.
 \end{lstlisting}
 \end{figure}
 
-
- A special case of the 
-filter scheme is the mime-mapper.  It turns serialized data obtained from
-external resource schemes such as {\tt file} or {\tt http} into domain objects
-using blocks keyed by mime-type.  
 
 \begin{figure}[htbp]
 \begin{center}
@@ -864,11 +936,10 @@ using blocks keyed by mime-type.
 \end{center}
 \end{figure}
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=http-cached-converted-listing,caption=Converting and caching.]
-scheme:http := 
 
- rawhttp -> filecache -> mapper -> memcache .
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=http-converted-cached-listing,caption=Converting and caching.]
+scheme:http := rawhttp->filecache->mapper->memcache .
 \end{lstlisting}
 \end{figure}
 
@@ -877,98 +948,91 @@ With the mime-type mapper in place, it might make more sense to
 cache the deserialized representation in memory rather than
 the raw bytes.  This change in caching strategy only requires
 the minimal change in the configuration of the composed http-scheme
-shown in figure~\ref{http-converted-cached}.
+shown in figure~\ref{http-converted-cached} and listing ~\ref{http-converted-cached-listing}.
 
 \begin{figure}[htbp]
-\caption{Caching the converted object}
 \begin{center}
 \includegraphics[scale=0.5,page=1]{mapped-and-cached-http.pdf}
-\end{center}
+\caption{Caching the converted object}
 \label{http-converted-cached}
+\end{center}
 \end{figure}
 
-Listing~\ref{http-converted-cached-listing} again closely follows the
-diagram in figure~\ref{http-converted-cached}.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=http-converted-cached-listing,caption=Converting and caching.]
-scheme:http := 
-
- rawhttp -> filecache -> mapper -> memcache.
-\end{lstlisting}
-\end{figure}
 
 With the mime-mapper in place in the revamped http-scheme, we can now use 
 an image that's stored on a remote server just by writing out its URL, as shown
 in listing~\ref{image-drawing}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=image-drawing,caption=Drawing a remote image.]
-drawingContext drawImage: http://
+\begin{lstlisting}[style=L,label=image-drawing,caption=Drawing a remote image via {\tt http:}.]
+context drawImage: 
+  http://static.flickr.com/2438/3559417932_7208103ed8_m.jpg
 \end{lstlisting}
 \end{figure}
 
-
-
-\subsection{Default scheme}
-
-
-The {\bf default} scheme is not an actual scheme per-se, but rather a special slot
-that is used in resolving identifiers encountered without a scheme-specifier.
-In that case, the scheme registered under the {\bf default} scheme is used
-instead, which when combined with the {\bf var} scheme that is the default
-for the {\bf default} scheme gives the semantics for a naked identifier (e.g. {\bf robot}).
-
-However, the default scheme can be set to some other scheme if that is more
-convenient for the task at hand, as shown in Listing~\ref{file-as-default-scheme},
-where a file copy is performed after the default scheme is set to file.
-
+We can also create a special {\tt flickr:} scheme from the base URL {\tt ref:http://static.flickr.com/2438},
+so hiding static parts of the URL,
+and then draw using just the (still long) image id (listing~\ref{flickr-scheme}).
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=file-as-default-scheme,caption=File copy with file: as default scheme.]
-  scheme:default := scheme:file.
-  myBashRc := .basrhc.
+\begin{lstlisting}[style=L,label=flickr-scheme,caption=Drawing remote image via {\tt flickr:}]
+context drawImage: flickr:3559417932_7208103ed8_m.jpg
 \end{lstlisting}
 \end{figure}
 
-One syntactic limitation of the default scheme mechanism is that it does not allow
-compound paths, so for compound paths a full URI with scheme must be used.
-
-
-\mpw{no changes yet beyond this point}
 
 \section{First class references}
 \label{references}
-The four-step evaluation process we saw in section~\ref{polymorphic-identifiers} is
-actually a convenience 
 
-The bindings that are returned by scheme-resolvers are usually ephemeral, used just 
-to get to the value pointed to by the identifier, either reading or writing it.  This
-makes it possible to program with arbitrary and user-defined identifiers in
-an identifier-oblivious style.  It also means that for sufficiently simple scheme-resolvers,
-the binding can actually be elided if the compiler can determine that it is not needed.
+\mpw{File object references:  metadata, children}
 
-However, as we saw earlier, it is sometimes
-desirable to use the identifier-aware style.  In order to do this, the language
-must provide access to the bindings used in resolving the identifier.
+\mpw{Generally:  pass references, I don't like the example that I currently have}
 
-The {\bf ref} scheme prevents evaluation of the binding and thus allows access
-to the binding itself.  Listing~\ref{ref-binding} illustrates the syntax and semantics:
-first a variable {\bf a} is defined and bound to a value 42, then we obtain a reference {\bf b} to
-the identifier for the first variable {\bf a}.  We can now manipulate variable {\bf a} 
-in a generic way through the reference we have obtained in variable {\bf b} without
-having a hard-coded reference. 
+\mpw{Messaging proxied via the refs.}
+
+One of the problems we identified in section~\ref{identifiers} was the difficulty of 
+
+As we saw in section~\ref{polymorphic-identifiers} and figure~\ref{scheme-eval}, {\em references}
+are usually used implicitly to access values and therefore hidden inside the PI system.  However,
+it is sometimes necessary to refer to the location that the identifier points to, instead of the 
+value.  We have already seen this with the {\em relative} scheme and the {\tt scurl} script, both
+of which need to do processing on the reference before creating a value. 
+
+
+The {\tt ref:} special scheme prevents evaluation of the reference and thus allows access
+to the reference itself.  Listing~\ref{ref-binding} illustrates the syntax and semantics:
+first a variable {\tt a} is defined and bound to a value 42 (1) using direct-reference syntax,
+then we obtain a reference {\tt ref:b} to
+the identifier for the first variable {\tt a} (3).  We can now manipulate variable {\tt a} 
+in a generic way through the reference we have obtained in variable {\tt b} (5).  
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=ref-binding,caption=Accessing a variable via its reference.]
+  a := 42.
+  a.  //  displays 42.
+  b := ref:var:a.
+  b value  //  displays 42.
+  b bindValue:2.
+  a  //  displays 2
+\end{lstlisting}
+\end{figure}
+
+Having exposed references as first class objects, we can now use them for parametrized 
+access.   The example we saw in listing~\ref{parametrized-reference} using string keys
+can now be expressed succinctly and efficiently using a reference (listing~\ref{ref-param}).
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=ref-binding,caption=Accessing a variable via its binding.]
-  a := 42.
-  b := ref:var:a.
-  b value  -> 42.
-  b bindValue:2.
-  a -> 2.
+\begin{lstlisting}[style=numbers,label=ref-param,caption=Reference parameters.]
+answerReference := ref:deepThought/theAnswer.
+answerReference := ref:dictionary/theAnswer.
 \end{lstlisting}
 \end{figure}
+
+
+
+
+
 
 This generic access to variables (or more generally: resources) can be used just as well
 with complex identifiers that have multi-element paths.  So for example a UI element
@@ -984,13 +1048,13 @@ that provides access to Unix environment variables.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=isBound,caption=Is environment variable set?]
-> ref:env:bozo isBound  -> 0
-> env:bozo := 'hi'
-> ref:env:bozo isBound  -> 1
+ ref:env:bozo isBound  // false
+ env:bozo := 'hi'
+ ref:env:bozo isBound  // true
 \end{lstlisting}
 \end{figure}
 
-Bindings are scheme-specific and can include additional API specific to that type of scheme.
+Reference are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
 meta-data about and perform operations on the file as shown in Listing~\ref{ref-file-dir}.
 
@@ -1002,10 +1066,10 @@ meta-data about and perform operations on the file as shown in Listing~\ref{ref-
 \end{lstlisting}
 \end{figure}
 
-Bindings for remote resources include methods for initiating a transfer, cache-control,
-error-checking and progress monitoring.   Bindings can be passed to user interface
-elements for manipulation of the object referenced.
-
+References for remote resources include methods for initiating a transfer,
+error-checking and progress monitoring.   References can be passed to user interface
+elements for generic manipulation of domain objects, for example a text field is 
+passed a reference to the {\tt name} attribute of a {\tt Person} object.
 
 
 
