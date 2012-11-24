@@ -131,7 +131,8 @@ but can also be manipulated in the programming language, making them first class
 entities.
 
 Our starting point is Smalltalk, where we have objects
-that communicate via messages\cite{Goldberg1983}.   Identifiers are used to identify 
+that communicate via messages\cite{Goldberg1983}, although we use the Apple's Cocoa
+class library\cite{Cocoa}.  Identifiers are used to identify 
 objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
 and polymorphic behavior can only be achieved via message-sends.
 
@@ -196,7 +197,7 @@ irreducible code-duplication, brittleness and simply cumbersome code.
 
 \subsection{Plain identifiers}
 \label{direct-reference}
-Like most programming languages, our dialect of Smalltalk\cite{Goldberg1983}, called
+Like most programming languages, our dialect of Smalltalk, called
 {\em Objective-Smalltalk} allows you to just write 
 an identifier by itself, and this will not just reference the slot that the identifier names, but also
 automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
@@ -301,8 +302,8 @@ this case the {\tt theAnswer} attribute of a {\tt DeepThought} object.
 
 \begin{figure}[htbp]
 \begin{center}
-\includegraphics[scale=0.52,page=1]{ui-widget-generic-access-messages.pdf}
-\caption{Widget with parametrized access to DeepThought's {\tt theAnswer} attribute using messages}
+\includegraphics[scale=0.51,page=1]{ui-widget-generic-access-messages.pdf}
+\caption{Widget using messages for parametrized access}
 \label{ui-widget-msg-access}
 \end{center}
 \end{figure}
@@ -313,9 +314,9 @@ initializing the object.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=parametrized-message-access,caption=Parametrized access via messages.]
-base performSelector:self setter 
-	  withObject:self getContents.
-self setContent:(base performSelector:self getter)
+self base performSelector:self setter 
+	       withObject:self getContents.
+self setContent:(self base performSelector:self getter)
 \end{lstlisting}
 \end{figure}
 
@@ -326,13 +327,20 @@ would need to be extended to arrays of message selectors.
 
 \subsection{Strings as identifiers}
 
-Since the setter and getter messages are related, if only by convention, one way of
-reducing the duplication seen in the previous section is using a string to specify
-the attribute in question and then derive the getter and setter methods dynamically,
-an approach used by Cocoa's {\em Key Value Coding} (KVC) protocol.
+Another alternative to plain identifiers are identifiers based on strings, which are one 
+way to write human-readable names in program text that is completely opaque to the language itself.
+They can be used as an interface to message-based access that tries to mitigate some of the problems
+identified, for user-defined custom storage
+mechanisms and to interact with external resources such as files or web-sites.
 
+
+One of many examples of string-based identifiers is Cocoa's {\em Key Value Coding} (KVC)\cite{KVC} protocol,
+which uses string keys to provide
+an easier to use interface for parametrized message-based access.  
 KVC adds two methods to every object, {\tt valueForKey:} and {\tt setValue:forKey:},
-with the key parameter being the string that's used as an identifier.
+with the key parameter being the string that's used as an identifier.  These generic access methods 
+use string processing on the key to determine the appropriate getter or setter message and 
+then use the message to actually store or retrieve the value.  
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=kvc-literal-string,caption=Strings used with {\em Key Value Coding} (KVC).]
@@ -341,25 +349,54 @@ deepThought setValue:42 forKey:theAnswer.
 \end{lstlisting}
 \end{figure}
 
+Listing~\ref{kvc-literal-string} shows how this gets close to the factored ideal of having a single identifier,
+in this case the string {\tt theAnswer} and two generic access methods, in this case the two KVC methods.
+However, listing~\ref{kvc-literal-string} also shows the cost:  significant syntactic noise as the identifier
+lookup mechanism is turned from something that works automatically behind the scenes (see figure~\ref{identifier-eval}
+and listing~\ref{variable-lookup}) to something that has to be specified by the developer at every step (see 
+listing~\ref{reified-variable-lookup} ).   Having to expose the lookup mechanism like this adds brittleness and
+runtime overhead, as well as preventing the compiler from helping with even basic consistency checks.
+
+
+Figure~\ref{ui-widget-string-access} and listing~\ref{kvc-variable-string} show how KVC simplifies parametrized access for 
+the client:  instead of having to specify two messages, the getter and the setter, a single string key can be used with
+the two generic accessors.  The actual access mechanism is a little more complicated, but this is hidden and can 
+be reused.
 
 \begin{figure}[htbp]
 \begin{center}
-\includegraphics[scale=0.52,page=1]{ui-widget-generic-access-messages.pdf}
-\caption{Widget with parametrized access to DeepThought's {\tt theAnswer} attribute using messages}
-\label{ui-widget-msg-access}
+\includegraphics[scale=0.51,page=1]{ui-widget-generic-access-string.pdf}
+\caption{Widget using string identifiers for parametrized access}
+\label{ui-widget-string-access}
 \end{center}
 \end{figure}
 
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=kvc-variable-string,caption=Parametrized access via KVC.]
+self base setObject:self getContents forKey:self key.
+self setContent:(self base objectForKey:self key).
+\end{lstlisting}
+\end{figure}
 
-For the large number of use cases not covered by either direct reference or
-message-based access, string-based identifiers interpreted at runtime 
-seem to be the implementation method of choice.  Listing~\ref{string-identifiers}
-gives a small sampling from one programming environment.
+Custom stores are also typically accessed via string keys, as shown in listing~\ref{string-identifiers-custom} for
+a plain dictionary and a persistent store of user preferences.  Although string keys can also be considered 
+identifiers, both because that is the role they have and because the way they are used is identical to
+the string identifier usage above, they cannot be used interchangeably because of the incompatibility
+introduced by the exposed lookup method, in one case {\tt valueForKey:} and on the other case {\tt objectForKey:}.
+The identifiers by themselves are actually not uniquely determined, they require their lookup method to also
+be specified.
+
+
+We could ameliorate the situation slightly by having a single universal protocol
+for string-identifier lookup, but that makes the actual message essentially
+meaningless and thus even more syntactic noise, and also means that we need
+to somehow differentiate the lookup scope within the string identifier.   The
+{\em schemes} used in URIs to differentiate lookup scopes are a potential
+solution.
+
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=string-identifiers,caption=Variants of string-based identifiers.]
-deepThought valueForKey:'theAnswer'.
-deepThought setValue:42 forKey:theAnswer.
+\begin{lstlisting}[style=numbers,label=string-identifiers-custom,caption=String-based identifiers for custom storage.]
 aDictionary objectForKey:'theAnswer'.
 aDictionary setObject:42 forKey:'theAnswer'.
 NSDefaults standardUserDefaults
@@ -369,38 +406,19 @@ NSDefaults standardUserDefaults
 \end{lstlisting}
 \end{figure}
 
-String-based identifiers are used for dynamic access to objects (1,2)
-\footnote{Other Smalltalks use {\tt basicAt:}, but {\tt valueForKey:} will use
-messaging if available}, 
-in dynamic, run-time extensible data structures such as
-dictionaries (3,4)  for custom storage mechanisms such as persistent
-user defaults (5-8), for generic (9,10) or type-specific (11) file access, cached
-access to named application resources (10) and to construct URLs (13,14)
-for later use (15).
 
-Since the strings themselves don't carry semantics for the programming language,
-they must be handed off to a runtime interpreter, which then performs the actual access.  The 
-interpreter can be as simple as a  string lookup into a dictionary,
-but it must always be specified in addition to the string.  Listing~\ref{string-bloat}
-shows how having to specify this interpreter obscures intent by adding syntactic
-noise compared to direct messaging, code bloat that cannot be removed by factoring.
+File access also uses string-based identifiers, starting with the Unix system calls ({\tt open()}) and the standard I/O library ({\tt fopen()}).
+Object oriented languages and toolkits follow this tradition, with a couple of examples shown in listing~\ref{string-file-identifiers}.
+The use of string identifiers introduces the context problem we saw above, hard-wiring client code to file-system access,
+rather than having a pluggable store.   However, making access pluggable would require at least a 2 step process at the
+call-site, making client code much less convenient.  
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=string-bloat,caption=Bloat with keyed access.]
-universe setObject:(deepThought objectForKey:'theAnswer')
-	 forKey:'answer'
-universe setAnswer:deepThought theAnswer.
-\end{lstlisting}
-\end{figure}
+This context problem is multiplied by the number of available access methods, leading to potentially quadratic growth in
+required methods:
+the {\tt imageNamed:} method provides a specialized cached access method for named images, but this generically useful
+capability is not made available to other classes because it has to be tied to a specific class.  Retrieving an object from
+a web-site requires yet another method per class(e.g. {\tt NSData dataWithContentsOfURL:} and {\tt NSString stringWithContentsOfURL:}).
 
-Apart from the performance costs and the inability of the compiler to help
-even check well-formedness of string-based identifiers, there is the problem
-of context when using identifiers as references, illustrated in listing~\ref{parametrized-reference}:
-we have the string-based identifier {\tt 'theAnswer'}, which we have placed into the
-variable {\tt answerReference}.   However, the reference is not self-contained, we
-have to know what exact type of container is used and use the appropriate message
-to interpret the string, either {\tt valueForKey:} for a generic object or {\tt objectForKey:}
-for a dictionary and {\tt stringWithContentsOfFile:} for a file.
 
 
 \begin{figure}[htbp]
@@ -413,60 +431,116 @@ UIImage imageNamed:'pictureOf42'.
 \end{lstlisting}
 \end{figure}
 
-\mpw{introduce file access}
+Another problem is that paths frequently have to be composed from a combination of system-provided base paths
+and fixed as well as variable components, for example a specific RFC stored in the {\tt rfcs} directory in the user's
+home directory ({\tt \$HOME/rfcs/\$rfcName}).  Because strings are basically a flat und semantically minimal data structure, clients
+must perform sometimes extensive string process as that shown in listing~\ref{rfcs-directory} to actually access
+data, use format strings or have special syntax such as the shell path above.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=parametrized-reference,caption=Indeterminate references.]
-answerReference := 'theAnswer'.
-deepThought valueForKey:answerReference.
-dictionary objectForKey:answerReference.
-NSString stringWithContentsOfFile:answerReference.
+\begin{lstlisting}[style=numbers,label=rfcs-directory,caption=Accessing a specific RFC in a directory relative to the user's \$HOME.]
+home := NSProcessInfo processInfo 
+          environment objectForKey:'HOME'.
+rfcDir  := home stringByAppendingPathComponent:'rfcs'.
+rfcPath := rfcDir stringByAppendingPathComponent:rfcName.
+rfcText := NSString stringWithContentsOfFile:rfcPath.
 \end{lstlisting}
 \end{figure}
 
-In fact, an expression like {\tt dictionary objectForKey:answerReference} can really
-be considered a compound identifier {\tt dictionary.<answerReference>} with
-a literal part ({\tt dictionary}) and a parametrized part ({\tt <answerReference>}).
 
-We could ameliorate the situation slightly by having a single universal protocol
-for string-identifier lookup, but that makes the actual message essentially
-meaningless and thus even more syntactic noise, and also means that we need
-to somehow differentiate the lookup scope within the string identifier.   The
-{\em schemes} used in URIs to differentiate lookup scopes are a potential
-solution.
 
-\mpw{issue: usually have relative paths, but because strings are dumb, we 
-	can't express that, so have to perform string processing at call-site
-	or duplicate code some more, start with RFC, but images are worse?}
 
 \subsection{Reified identifiers}
 
 
-Alternatively, we can encapsulate these three
-attributes in a separate reference object, such as a {\em ValueHolder}, but this 
-object must also be initialized with those parameters. 
+Unlike strings, reified references can be semantically rich and self-contained, not requiring
+a separate evaluator, und unlike
+messages they can encapsulate both read and write access in one entity.  VisualWorks 
+Smalltalk uses {\em ValueHolder} objects to handle the parametrized access we've been
+looking at, while Cocoa uses the {\tt NSURL} class to represent references that are URLs.
 
-
-\mpw{also need ValueHolder here}
-
-\mpw{more on URLs, matrix of  type  x store, code duplication either in convenience methods 
-	or call sites, UIImage etc., that's why we need polymorphism!}
-
-
-Another way of solving the context problem illustrated in listing~\ref{parametrized-reference} 
-is creating an actual reference object that carries the lookup
-semantics with it, but as shown in listing~\ref{reified-identifiers},
-this increases code bloat even more, and we still have to specify the initial identifier as string.
+Figure~\ref{ui-widget-valueholder} shows how a ValueHolder reduces the entities the widget
+needs to interact with to one, from three in the case of message-based identifiers and two
+in the case of string-based identifiers.  As it should be, how the ValueHolder accesses 
+its underlying data is completely hidden from clients, so different containers or access
+strategies can be substituted without having to modify client code.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Reified identifier.]
+\begin{center}
+\includegraphics[scale=0.51,page=1]{ui-widget-valueholder.pdf}
+\caption{Widget using ValueHolder for parametrized access}
+\label{ui-widget-valueholder}
+\end{center}
+\end{figure}
+
+Similarly, {\tt NSURL} at least ameliorates the context problems for strings used as
+references to external resources, due to the fact that URL syntax can specify 
+various access paths using {\em schemes} and these are handled via a plug-in 
+architecture. 
+
+However, what {\em ValueHolders} and {\tt NSURL}s gain in encapsulation and flexibility,
+they lose in convenience and expressiveness:   since reified identifiers have no literal
+syntax that is equivalent to a name, they must first be initialized with a name, typically
+a string, as shown in listing~\ref{reified-identifiers}, then the URL must be loaded and
+finally the data retrieved converted into an object, which can then be used, for example
+for drawing.  For local variables, the code 
+would resemble the counter-example given in listing~\ref{reified-variable-lookup}.
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Drawing an image stored on flickr.]
 answerURL := NSURL URLWithString:
 	'http://www.depthought.com/theAnswer'.
 NSData dataWithContentsOfURL:answerURL.
 \end{lstlisting}
 \end{figure}
 
+The problems of relative identifiers discussed in the previous section also apply, for example requiring
+string processing before creating the URL as shown in listing~\ref{rfc-web-string-processing}.  
 
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=rfc-web-string-processing,caption=Retrieving a specific RFC (I).]
+base:='http://datatracker.ietf.org/doc/'.
+rfcLocation := base stringByAppendingPathComponent:rfcName.
+rfcUrl := NSURL URLWithString:rfcLocation.
+rfcText := NSData dataWithContentsOfURL:rfcUrl.
+\end{lstlisting}
+\end{figure}
+
+ Listing~\ref{nsurl-flickr-draw}
+shows the complete process for drawing an image with a specific ID from flickr on a graphics context,
+whereas drawing the same image with the same ID stored within the application's bundle
+is shown in listing~\ref{flickr-local-draw}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=nsurl-flickr-draw,caption=Retrieving and drawing a remote image.]
+flickrURL :=NSURL URLWithString:
+	'http://static.flickr.com/2438/'.
+imageURL := NSURL 
+         URLWithString:'3559417932_7208103ed8_m.jpg' 
+         relativeToURL:flickrBase.
+imageData := NSData dataWithContentsOfURL:imageURL.
+image := UIImage imageWithData:imageData.
+context drawImage: image.
+\end{lstlisting}
+\end{figure}
+
+Not only is the amount of code vastly different, but the two versions are also very different.  Due to the inconvenience
+of the regular API, web services tend to provide site-specific APIs that are incompatible from site to site and 
+incompatible with other types of resource access.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=flickr-local-draw,caption=Retrieving and drawing a local image.]
+context drawImage: (UIImage imageWithName:
+	'3559417932_7208103ed8_m').
+\end{lstlisting}
+\end{figure}
+
+A final problem, apart from the loss of directness and expressiveness, is that we have now pretty
+much exactly duplicated the identifier lookup mechanism that's built into the language (see figure~\ref{identifier-eval}
+in user space.  Such code duplication should be avoided, but we are prevented from applying refactoring
+to implement on in terms of the other by the fact that one is hard-wired into the language and the other is not.
 
 \subsection{Discussion}
 
@@ -493,7 +567,7 @@ source code as strings we saw in section~\ref{identifiers} suggests that the iss
 solved at the linguistic level.
 
 Instead of using messaging or strings to get polymorphic resource access, polymorphic identifiers
-generalize direct references  just like messaging generalized function calls and made them polymorphic.
+generalize direct references,  just like messaging generalized function calls and made them polymorphic.
 Polymorphic identifiers combine the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
@@ -509,8 +583,7 @@ Lines 5-6 shows access to an object's attribute, which corresponds to section~\r
 mediated by the object, using message sends or other means at the object's discretion.  Whether messaging
 is used to implement the access is encapsulated as an implementation detail.  Lines 7-14 correspond
 to the string-reference examples in listing~\ref{string-identifiers}, with for example line 12 storing the
-value {\tt 42} in the file {\tt theAnswer.text}.  Line 15 corresponds to the parametrized reference in listing~\ref{parametrized-reference}, we use curly brackets to indicate that part of an identifier is not a literal but
-a variable that needs to be retrieved itself and then inserted into the identifier.  Line 16 corresponds to the retrieval of a URL resource in listing~\ref{reified-identifiers}, while line 17 uses the {\tt ref} scheme to inhibit full evaluation, therefore just returning the
+value {\tt 42} in the file {\tt theAnswer.text}.   Line 15 corresponds to the retrieval of a URL resource in listing~\ref{reified-identifiers}, while line 16 uses the {\tt ref} scheme to inhibit full evaluation, therefore just returning the
 URL reference rather than actually retrieving the value (References will be discussed more fully in section~\ref{references}).
 
 \begin{figure}[htbp]
@@ -529,7 +602,6 @@ file:theAnswer.txt.
 file:theAnswer.txt := 42.
 file:answerImage.png.
 img:pictureOf42.
-var:aDictionary/{answerRef}
 http://www.depthought.com/theAnswer.
 ref:http://www.depthought.com/theAnswer.
 \end{lstlisting}
@@ -568,10 +640,10 @@ polymorphic identifier.
 
 
 \begin{figure}[htbp]
-\label{scheme-eval}
 \begin{center}
 \includegraphics[scale=0.45,page=1]{scheme-evaluation.pdf}
 \caption{Polymorphic Identifier lookup}
+\label{scheme-eval}
 \end{center}
 \end{figure}
 
@@ -648,19 +720,11 @@ default in the scripting environment {\tt stsh}.
 \begin{lstlisting}[style=L,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
 > scheme:scheme 
 scheme-resolver with the following schemes: (
-    file,
-    ftp,
-    default,
-    var,
-    bundle,
-    defaults,
-    sel,
-    mainbundle,
-    scheme,
-    http,
-    env,
+    file, ftp,  http, https
+    default, var, sel,    scheme,
+    bundle,  mainbundle,
+    defaults,  env,
     class,
-    https
 )
 \end{lstlisting}
 \end{figure}
@@ -984,20 +1048,23 @@ context drawImage: flickr:3559417932_7208103ed8_m.jpg
 \section{First class references}
 \label{references}
 
-\mpw{File object references:  metadata, children}
 
-\mpw{Generally:  pass references, I don't like the example that I currently have}
-
-\mpw{Messaging proxied via the refs.}
-
-One of the problems we identified in section~\ref{identifiers} was the difficulty of 
-
-As we saw in section~\ref{polymorphic-identifiers} and figure~\ref{scheme-eval}, {\em references}
+As we saw in section~\ref{polymorphic-identifiers} and figures~\ref{scheme-eval} and \ref{identifier-eval}, {\em references}
 are usually used implicitly to access values and therefore hidden inside the PI system.  However,
-it is sometimes necessary to refer to the location that the identifier points to, instead of the 
-value.  We have already seen this with the {\em relative} scheme and the {\tt scurl} script, both
-of which need to do processing on the reference before creating a value. 
+as we saw in section~\ref{identifiers}, having references visible is sufficiently valuable that various
+mechanisms have been created that parallel the built-in identifier lookup mechanism in order to
+get visible references.
 
+The reification of identifier lookup in the PI system means that identifiers are available as objects, 
+they just need to be made visible.   Since references are evaluated to get values, the 
+simplest way from an implementation point of view would be for identifiers to always just
+evaluated to references and then have the client interact with the references to get to
+the values, what we have called the {\em identifier aware} style of programming.
+
+However, {\em identifier oblivious} access, where the identifier is assumed to mean the
+value is sufficiently more common that it makes sense to have evaluation of not just
+the identifier but also the reference be the default, and stopping the evaluation at the
+reference be the special case.
 
 The {\tt ref:} special scheme prevents evaluation of the reference and thus allows access
 to the reference itself.  Listing~\ref{ref-binding} illustrates the syntax and semantics:
@@ -1018,39 +1085,35 @@ in a generic way through the reference we have obtained in variable {\tt b} (5).
 \end{figure}
 
 Having exposed references as first class objects, we can now use them for parametrized 
-access.   The example we saw in listing~\ref{parametrized-reference} using string keys
-can now be expressed succinctly and efficiently using a reference (listing~\ref{ref-param}).
-
+access.   Using references, the GUI widget example from section~\ref{identifiers} now
+also takes just one argument in the widget (figure~\ref{ui-widget-reference}) just like
+the ValueHolder version (figure~\ref{ui-widget-valueholder}).
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=ref-param,caption=Reference parameters.]
-answerReference := ref:deepThought/theAnswer.
-answerReference := ref:dictionary/theAnswer.
-\end{lstlisting}
+\begin{center}
+\includegraphics[scale=0.51,page=1]{ui-widget-reference.pdf}
+\caption{Widget using first class reference}
+\label{ui-widget-reference}
+\end{center}
 \end{figure}
 
+However, we can have this convenience without the drawbacks of a parallel class
+hierarchy, as we reuse the basic identifier lookup mechanism, and without any
+inconvenience in creation, because we can just use the same syntax as we would
+with a direct reference, only having to prefix a {\tt ref:} at the beginning:  {\tt ref:var:deepThought/theAnswer}.
 
 
 
 
-
-This generic access to variables (or more generally: resources) can be used just as well
-with complex identifiers that have multi-element paths.  So for example a UI element
-could get the reference {\bf ref:var:robot/head/leftEye/color} and would then be
-able to manipulate the eye-color of the left eye of that particular robot safely using
-the message {\bf value} and {\bf setValue:}
-without having to know about or traverse the structure in question.
-
-Common operations on bindings are retrieving, binding and unbinding a value and testing 
-wether a binding has a value, as shown in Listing~\ref{isBound} for the {\bf env} scheme
-that provides access to Unix environment variables.
-
+Apart from retrieving and storing values, references are also used to query manipulate
+metadata, for example wether a reference is bound to a value, which can mean that
+a file or an environment variable exists.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=isBound,caption=Is environment variable set?]
- ref:env:bozo isBound  // false
- env:bozo := 'hi'
- ref:env:bozo isBound  // true
+ref:env:bozo isBound  // false
+env:bozo := 'hi'
+ref:env:bozo isBound  // true
 \end{lstlisting}
 \end{figure}
 
@@ -1060,37 +1123,35 @@ meta-data about and perform operations on the file as shown in Listing~\ref{ref-
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=ref-file-dir,caption=File and directory manipulation.]
-> newDir := ref:file:testDir 
-> newDir isDirectory  -> 1
+\begin{lstlisting}[style=L,label=ref-file-dir,caption=Is {\tt /tmp} a directory?]
+ref:file:/tmp/ isDirectory  //  true, on Unix
 \end{lstlisting}
 \end{figure}
 
 References for remote resources include methods for initiating a transfer,
-error-checking and progress monitoring.   References can be passed to user interface
-elements for generic manipulation of domain objects, for example a text field is 
-passed a reference to the {\tt name} attribute of a {\tt Person} object.
-
-
+error-checking and progress monitoring.  
 
 \section{Evaluated identifiers}
 
-With richer identifiers, it makes sense to allow abstractions to be built with these identifiers.
+
+
+\mpw{References and relative scheme not only}
+
 One example is parametrization, with an identifier having parameters that are evaluated
 at runtime.  Curly brackets \{\} denote a section of the path that should be evaluated and
 the return value used as part of the access path.
 
-Listing~\ref{bashrc-pi} shows an example where the current user's home directory
-is retrieved from the Unix environment using the {\bf env} scheme and the resulting
-path is then used to obtain the current user's  {\bf .bashrc}.
-It is equivalent to Listings~\ref{posix-file-resolve}, \ref{cocoa-file-contents}, and 
-\ref{sh-file-contents}.
+Listing~\ref{rfc-local-ref} recasts the example in listing~\ref{}, retrieving a specific RFC from a 
+the {\tt rfcs} directory in the user's home directory using polymorphic identifiers.  It is almost
+as concise as the Unix shell equivalent {\tt \$HOME/rfcs/\$rfcName}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=bashrc-pi,caption=Parametrized identifier.]
-  file:{env:HOME}/.bashrc
+\begin{lstlisting}[style=L,label=rfc-local-ref,caption=Parametrized identifier for local RFC access.]
+  file:{env:HOME}/rfcs/{rfcName}
 \end{lstlisting}
 \end{figure}
+
+\mpw{here}
 
 
 Different abstraction mechanisms can be combined, for example yielding
@@ -1215,6 +1276,23 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 \end{figure}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
+
+\section{Evaluation}
+\label{evaluation}
+
+\mpw{KVC vs. PI performance}
+
+\mpw{concise without obfuscation}
+
+\mpw{identifier manipulation better than just strings?}
+
+\mpw{flickr with cache (because easy to create), vs. NSURL that caches before the image}
+
+\mpw{cached web-server vs. Apache}
+
+
+%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
+
 
 \section{Related Work}
 \label{related-work}
