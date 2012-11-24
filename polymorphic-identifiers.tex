@@ -1134,10 +1134,13 @@ error-checking and progress monitoring.
 \section{Evaluated identifiers}
 
 
+One of the problems we repeatedly encountered in section~\ref{identifiers} was 
+that of specialized and parametrized access, which has been partly solved with
+relative schemes and first class identifiers.  Another common use case involves
+mixing static and dynamic parts in a single identifier, which has to resolved by
+using string processing.
 
-\mpw{References and relative scheme not only}
-
-One example is parametrization, with an identifier having parameters that are evaluated
+Parametrized identifiers are identifiers that have parts that are evaluated
 at runtime.  Curly brackets \{\} denote a section of the path that should be evaluated and
 the return value used as part of the access path.
 
@@ -1147,37 +1150,28 @@ as concise as the Unix shell equivalent {\tt \$HOME/rfcs/\$rfcName}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=rfc-local-ref,caption=Parametrized identifier for local RFC access.]
-  file:{env:HOME}/rfcs/{rfcName}
+file:{env:HOME}/rfcs/{rfcName}
 \end{lstlisting}
 \end{figure}
 
-\mpw{here}
 
-
-Different abstraction mechanisms can be combined, for example yielding
+Different abstraction mechanisms can be combined, for example using a
+relative scheme with a parametrized identifier, yielding
 a scheme that represents file in the current user's home directory, shown
 in Listing~\ref{home-scheme}.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=home-scheme,caption=Accessing .bashrc via custom home: scheme.]
-  base := ref:file:{env:HOME}.
-  scheme:home := RelScheme schemeWithBase:base.
-  home:.bashrc.
+\begin{lstlisting}[style=L,label=home-scheme,caption={\tt home:} scheme and {\tt rfc:} scheme.]
+  scheme:home := ref:file:{env:HOME} asScheme.
+  scheme:rfcs := ref:home/rfcs
 \end{lstlisting}
 \end{figure}
 
-A sequential composition scheme simply searches a list of other schemes
-for a particular identifier.  It searches its argument schemes sequentially
-for the identifier in question and returns the first match.  Lookup rules for
-identifiers that are usually hard-coded into languages can be expressed
-as a sequential composition scheme, for example:   \{ scheme:local ,
-scheme:ivar , scheme:classvar , scheme:poolvar , scheme:global \} for Smalltalk 
-(ignoring the capitalization rules for now).
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
-
+\mpw{here}
 
 \section{Implementation}
 \label{implementation}
