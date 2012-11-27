@@ -121,6 +121,14 @@ language- and user-provided identifier mechanism.
 
 \section{Introduction}
 
+
+
+\mpw{OO polymorphism, verbs, very useful, but how to name/get the nouns}
+
+\mpw{polymorphism in resource access: filesystems, web}
+
+
+
 We report on an experimental
 technique for expanding our ability to directly name and reference many different 
 resources
@@ -149,11 +157,11 @@ direct, {\em identifier oblivious} access and
 
 In section~\ref{identifiers}, we will look at different ways of accessing resources and see
 the shortcomings of those approaches.  In section~\ref{polymorphic-identifiers}, we 
-describe {\em polymorphic identifiers} as a reification, abstraction and extension of existing 
-identifier lookup mechanisms.  Section~\ref{schemes} gives more details on {\em scheme resolvers},
-an important component especially for composability, whereas section~\ref{references} looks
-at references, which mediate access.  
-
+introduce {\em polymorphic identifiers} as a reification, abstraction and extension of existing 
+identifier lookup mechanisms.  After that we look at components of the polymorphic identifier (PI)
+system, {\em scheme resolvers} (section~\ref{schemes}), first class {\em references} (section~\ref{references}),
+parametrized identifiers (section~\ref{parametrized}), and finally some implementation details (section~\ref{implementation}).
+In section~\ref{evaluation} we evaluate the system and look at related work in section~\ref{related-work}.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -850,7 +858,7 @@ All these schemes have different starting points but then allow path-based acces
 that is mediated by the objects in question.   Each object / class is asked at least
 once for access to an attribute and then returns a reference.   This reference can
 use message sending, keyed access or even a direct offset for very fast
-access without requiring a sophisticated JIT compiler.
+access without requiring a JIT compiler.
 
 There is also a {\tt global:} scheme for globals and a {\tt class:} scheme that separates
 the namespace for instances from that for classes.  Having separate schemes for
@@ -1075,12 +1083,8 @@ in a generic way through the reference we have obtained in variable {\tt b} (5).
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=ref-binding,caption=Accessing a variable via its reference.]
-  a := 42.
-  a.  //  displays 42.
-  b := ref:var:a.
-  b value  //  displays 42.
-  b bindValue:2.
-  a  //  displays 2
+ref:theAnswer setValue:42.  
+ref:theAnswer value.     //  returns 42
 \end{lstlisting}
 \end{figure}
 
@@ -1117,10 +1121,24 @@ ref:env:bozo isBound  // true
 \end{lstlisting}
 \end{figure}
 
-Reference are scheme-specific and can include additional API specific to that type of scheme.
+\subsection{Scheme-specific behavior}
+
+References are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
 meta-data about and perform operations on the file as shown in Listing~\ref{ref-file-dir}.
 
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=symbolic-link,caption=Creating a symbolic link to {\tt /tmp}]
+file:/linkToTemp/ := ref:file:/tmp
+\end{lstlisting}
+\end{figure}
+
+Having the concept of references also regularizes some special-purpose APIs.  For example,
+we can copy a file using the code {\tt file:a := file:b}.  If a {\tt ref:file:} is a reference to a file, what
+happens when we write this reference to a file?  A symbolic link is created\footnote{A hard link
+would be a reference to the inode, which isn't exposed by the kernel}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=ref-file-dir,caption=Is {\tt /tmp} a directory?]
@@ -1131,12 +1149,37 @@ ref:file:/tmp/ isDirectory  //  true, on Unix
 References for remote resources include methods for initiating a transfer,
 error-checking and progress monitoring.  
 
-\section{Evaluated identifiers}
+\subsection{Messaging}
 
+References also mediate message sends.   Messages are not sent directly to their objects, but via a
+\emph{Higher Order Message}\cite{HOM}, in this case {\tt send}, to the receiver.    Higher Order Messages
+are messages that take other messages as their argument, so the argument of the {\tt send} HOM is the
+message that is to be sent to the value of the reference.   Line 1 of listing~\ref{message-via-ref} shows
+what happens when sending the {\tt setTheAnswer:} message to the {\tt deepThought} object with
+the argument {\tt 42}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=message-via-ref,caption=Message sending via reference and with syntactic sugar]
+ref:deepThought send setTheAnswer:42
+deepThought setTheAnswer:42
+\end{lstlisting}
+\end{figure}
+
+As with obtaining values from references, line 1 is consistent but would be too inconvenient for day to day use,
+so line 2 shows the syntactic sugar version that is converted by the compiler to what's in line 1.  The {\tt send}
+HOM implements the simple synchronous message send that is default Smalltalk semantics.   Arguments
+are passed simply by value, as we have the trivial {\tt ref:} prefix if we want to send references instead.
+
+References can and do implement other message passing semantics, such as asynchronous sends, future
+sends or remote message sending.  As such, they take over the role of {\em Proxies} for mediating non-default
+message sending semantics.  
+
+\section{Parametrized identifiers}
+\label{parametrized}
 
 One of the problems we repeatedly encountered in section~\ref{identifiers} was 
 that of specialized and parametrized access, which has been partly solved with
-relative schemes and first class identifiers.  Another common use case involves
+relative schemes and first class references.  Another common use case involves
 mixing static and dynamic parts in a single identifier, which has to resolved by
 using string processing.
 
@@ -1144,7 +1187,7 @@ Parametrized identifiers are identifiers that have parts that are evaluated
 at runtime.  Curly brackets \{\} denote a section of the path that should be evaluated and
 the return value used as part of the access path.
 
-Listing~\ref{rfc-local-ref} recasts the example in listing~\ref{}, retrieving a specific RFC from a 
+Listing~\ref{rfc-local-ref} recasts the example in listing~\ref{rfcs-directory}, retrieving a specific RFC from a 
 the {\tt rfcs} directory in the user's home directory using polymorphic identifiers.  It is almost
 as concise as the Unix shell equivalent {\tt \$HOME/rfcs/\$rfcName}.
 
@@ -1175,8 +1218,8 @@ in Listing~\ref{home-scheme}.
 
 \section{Implementation}
 \label{implementation}
+\emph{Polymorphic Identifiers} have been implemented as part of Objective-Smalltalk \cite{objst},
 
-\emph{Polymorphic identifiers} have been implemented as part of Objective-Smalltalk \cite{objst},
 a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-apple} runtime, 
 in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby}.
 
@@ -1193,7 +1236,7 @@ that is written in itself, or more precisely written in variants of itself \cite
 
 
 
-\subsection{Example}
+\subsection{A simple example scheme}
 
 Listings~\ref{get-env}-\ref{hasValue-env} show the implementation of a simple scheme,
 the env-scheme that provides access to Unix environment variables.  While this scheme
@@ -1274,7 +1317,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 \section{Evaluation}
 \label{evaluation}
 
-\mpw{KVC vs. PI performance}
+\mpw{KVC vs. PI performance, use MPWVarRef, caching works vs. caching doesn't work}
 
 \mpw{concise without obfuscation}
 
