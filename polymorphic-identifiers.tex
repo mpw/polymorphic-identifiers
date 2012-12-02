@@ -105,7 +105,7 @@ of messaging achieve these goals, instead causing code duplication, tying varyin
 implementations to specific interfaces, causing brittleness in the face of changes as well
 as performance problems and making parametrized access difficult.
 
-We propose {\em polymorphic identifiers} as a reified and open replacement for both
+We propose \emph{Polymorphic Identifiers} as a reified and open replacement for both
 language- and user-provided identifier mechanism. 
 
 
@@ -114,7 +114,7 @@ language- and user-provided identifier mechanism.
 \category{D.3.3}{Programming Languages}{Language Constructs and Features}
 
 \terms{language, design}
-\keywords{polymorphic identifiers} % NOT required for Proceedings
+\keywords{Polymorphic Identifiers} % NOT required for Proceedings
 \setlength{\epigraphrule}{0pt}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -122,19 +122,12 @@ language- and user-provided identifier mechanism.
 \section{Introduction}
 
 
-
-\mpw{OO polymorphism, verbs, very useful, but how to name/get the nouns}
-
-\mpw{polymorphism in resource access: filesystems, web}
-
-
-
 We report on an experimental
 technique for expanding our ability to directly name and reference many different 
 resources
 in programming languages using a common identifier and identifier resolution
 mechanism.
-These \emph{polymorphic identifiers} are not only user-extensible,
+These \emph{Polymorphic Identifiers} are not only user-extensible,
 but can also be manipulated in the programming language, making them first class 
 entities.
 
@@ -151,15 +144,15 @@ by the programmer and cannot be used interchangeably with built in identifiers.
 The contributions of this paper are
 \begin{enumerate} \item a uniform, composable and extensible resource access mechanism for all
 resources in a program, \item  a way of integrating that access mechanism naturally into the language for
-direct, {\em identifier oblivious} access and
-\item a uniform treatment of references for indirect, {\em identifier aware} access.
+direct, \emph{identifier oblivious} access and
+\item a uniform treatment of references for indirect, \emph{identifier aware} access.
 \end{enumerate}
 
 In section~\ref{identifiers}, we will look at different ways of accessing resources and see
 the shortcomings of those approaches.  In section~\ref{polymorphic-identifiers}, we 
-introduce {\em polymorphic identifiers} as a reification, abstraction and extension of existing 
-identifier lookup mechanisms.  After that we look at components of the polymorphic identifier (PI)
-system, {\em scheme resolvers} (section~\ref{schemes}), first class {\em references} (section~\ref{references}),
+introduce \emph{Polymorphic Identifiers} as a reification, abstraction and extension of existing 
+identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
+system, \emph{scheme resolvers} (section~\ref{schemes}), first class \emph{references} (section~\ref{references}),
 parametrized identifiers (section~\ref{parametrized}), and finally some implementation details (section~\ref{implementation}).
 In section~\ref{evaluation} we evaluate the system and look at related work in section~\ref{related-work}.
 
@@ -191,14 +184,14 @@ final value looks like figure~\ref{identifier-eval}, with slight variations:   t
 the identifier itself, which is a human-readable character string, there is some sort
 of store that has identifiable slots or cells and there is a value stored in one of those
 cells.   In order to retrieve a value, the identifier is converted to a value using the
-hypothetical {\em ref(identifier)} function and then the reference is used to look up an actual
-value from a slot using the {\em value(reference)} function.
+hypothetical \emph{ref(identifier)} function and then the reference is used to look up an actual
+value from a slot using the \emph{value(reference)} function.
 
 
 We will look at 4 distinct types of identifiers that all follow this basic pattern:  language-supported 
-{\em direct reference}, where identifiers directly resolve to values, {\em message-based} lookup
+\emph{direct reference}, where identifiers directly resolve to values, \emph{message-based} lookup
 used for encapsulation,
-{\em string-based} lookup often used with extensible data structures or filesystem access and
+\emph{string-based} lookup often used with extensible data structures or filesystem access and
 finally reified object access.   While each of these approaches solves a part of the problem,
 none of them is satisfactory in the end, either lacking capability and extensibility or leading to
 irreducible code-duplication, brittleness and simply cumbersome code.
@@ -206,7 +199,7 @@ irreducible code-duplication, brittleness and simply cumbersome code.
 \subsection{Plain identifiers}
 \label{direct-reference}
 Like most programming languages, our dialect of Smalltalk, called
-{\em Objective-Smalltalk} allows you to just write 
+\emph{Objective-Smalltalk} allows you to just write 
 an identifier by itself, and this will not just reference the slot that the identifier names, but also
 automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
 the assignment operator {\tt :=}.    Assuming I have a variable that contains {\tt theAnswer} to 
@@ -220,11 +213,11 @@ life, the universe and everything, I can access it as shown in listing~\ref{vari
 \end{figure}
 
 Due to the fact that the programmer does not, and cannot, deal with either the identifier
-or the reference, but names the value using the identifier, we call this an {\em identifier oblivious}
+or the reference, but names the value using the identifier, we call this an \emph{identifier oblivious}
 access.  This type of direct access is only possible for a few specific variable types
 (local, instance, class, pool and global) and supported directly by the compiler.
 
-If it were possible to make the lookup explicit, what we call {\em identifier aware},
+If it were possible to make the lookup explicit, what we call \emph{identifier aware},
 the code would look something like listing~\ref{reified-variable-lookup}.  Apart
 from the infinite recursion ({\tt thisContext}  also needs to be looked up),
 forcing this style would be prohibitive from both effort/readability and performance
@@ -276,7 +269,7 @@ each and every class.
  
 This entanglement means we  
 must provide two trivial accessor methods like the ones in listing~\ref{trivial-accessors} for each actual resource we wish
-to access.  Studies show that around 5\% of Java code consists of such trivial accessors\cite{Spinellis:2002:MPC:510857.510868}, and although the authors of said study argue that this is {\em not} enough
+to access.  Studies show that around 5\% of Java code consists of such trivial accessors\cite{Spinellis:2002:MPC:510857.510868}, and although the authors of said study argue that this is \emph{not} enough
 to warrant special treatment, it should be noted that the prevalence of actual polymorphic 
 message sends is also reported to be around 5\% \cite{Holzle:1991:ODO:646149.679193}.
 
@@ -335,6 +328,7 @@ would need to be extended to arrays of message selectors.
 
 \subsection{Strings as identifiers}
 
+
 Another alternative to plain identifiers are identifiers based on strings, which are one 
 way to write human-readable names in program text that is completely opaque to the language itself.
 They can be used as an interface to message-based access that tries to mitigate some of the problems
@@ -342,7 +336,7 @@ identified, for user-defined custom storage
 mechanisms and to interact with external resources such as files or web-sites.
 
 
-One of many examples of string-based identifiers is Cocoa's {\em Key Value Coding} (KVC)\cite{KVC} protocol,
+One of many examples of string-based identifiers is Cocoa's \emph{Key Value Coding} (KVC)\cite{KVC} protocol,
 which uses string keys to provide
 an easier to use interface for parametrized message-based access.  
 KVC adds two methods to every object, {\tt valueForKey:} and {\tt setValue:forKey:},
@@ -351,7 +345,7 @@ use string processing on the key to determine the appropriate getter or setter m
 then use the message to actually store or retrieve the value.  
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=kvc-literal-string,caption=Strings used with {\em Key Value Coding} (KVC).]
+\begin{lstlisting}[style=numbers,label=kvc-literal-string,caption=Strings used with \emph{Key Value Coding} (KVC).]
 deepThought valueForKey:'theAnswer'.
 deepThought setValue:42 forKey:theAnswer.
 \end{lstlisting}
@@ -399,7 +393,7 @@ We could ameliorate the situation slightly by having a single universal protocol
 for string-identifier lookup, but that makes the actual message essentially
 meaningless and thus even more syntactic noise, and also means that we need
 to somehow differentiate the lookup scope within the string identifier.   The
-{\em schemes} used in URIs to differentiate lookup scopes are a potential
+\emph{schemes} used in URIs to differentiate lookup scopes are a potential
 solution.
 
 
@@ -464,7 +458,7 @@ rfcText := NSString stringWithContentsOfFile:rfcPath.
 Unlike strings, reified references can be semantically rich and self-contained, not requiring
 a separate evaluator, und unlike
 messages they can encapsulate both read and write access in one entity.  VisualWorks 
-Smalltalk uses {\em ValueHolder} objects to handle the parametrized access we've been
+Smalltalk uses \emph{ValueHolder} objects to handle the parametrized access we've been
 looking at, while Cocoa uses the {\tt NSURL} class to represent references that are URLs.
 
 Figure~\ref{ui-widget-valueholder} shows how a ValueHolder reduces the entities the widget
@@ -483,10 +477,10 @@ strategies can be substituted without having to modify client code.
 
 Similarly, {\tt NSURL} at least ameliorates the context problems for strings used as
 references to external resources, due to the fact that URL syntax can specify 
-various access paths using {\em schemes} and these are handled via a plug-in 
+various access paths using \emph{schemes} and these are handled via a plug-in 
 architecture. 
 
-However, what {\em ValueHolders} and {\tt NSURL}s gain in encapsulation and flexibility,
+However, what \emph{ValueHolders} and {\tt NSURL}s gain in encapsulation and flexibility,
 they lose in convenience and expressiveness:   since reified identifiers have no literal
 syntax that is equivalent to a name, they must first be initialized with a name, typically
 a string, as shown in listing~\ref{reified-identifiers}, then the URL must be loaded and
@@ -574,9 +568,9 @@ The irreducible code duplication and frequent need to embed (mini-)languages int
 source code as strings we saw in section~\ref{identifiers} suggests that the issue needs to be
 solved at the linguistic level.
 
-Instead of using messaging or strings to get polymorphic resource access, polymorphic identifiers
+Instead of using messaging or strings to get polymorphic resource access, Polymorphic Identifiers
 generalize direct references,  just like messaging generalized function calls and made them polymorphic.
-Polymorphic identifiers combine the techniques for resource access discussed in the previous 
+Polymorphic Identifiers combine the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
 \item extending the syntax for identifiers to that of Universal Resource Identifiers (URIs)\cite{rfc3986},
@@ -585,7 +579,7 @@ section by:
 \end{enumerate}
 
 Listing~\ref{polymorphic-identifier-examples} recasts the examples from section~\ref{identifiers} using
-polymorphic identifiers.  Lines 1-4 are just direct references corresponding to section~\ref{direct-reference},
+Polymorphic Identifiers.  Lines 1-4 are just direct references corresponding to section~\ref{direct-reference},
 the {\tt var} scheme is the default so lines 1 and 3 are equivalent, as are 2 and 4.
 Lines 5-6 shows access to an object's attribute, which corresponds to section~\ref{message-access} and is
 mediated by the object, using message sends or other means at the object's discretion.  Whether messaging
@@ -595,7 +589,7 @@ value {\tt 42} in the file {\tt theAnswer.text}.   Line 15 corresponds to the re
 URL reference rather than actually retrieving the value (References will be discussed more fully in section~\ref{references}).
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Some variants of polymorphic identifiers.]
+\begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Some variants of Polymorphic Identifiers.]
 theAnswer.
 theAnswer:=42.
 var:theAnswer.
@@ -619,18 +613,18 @@ The very regular structure of the identifiers in listing~\ref{polymorphic-identi
 suggests interoperability, and this is in fact the case:  scheme names are not fixed but can be
 assigned at will, making it possible to substitute schemes.
 
-The polymorphic identifier system consists of three basic parts:
+The Polymorphic Identifier system consists of three basic parts:
 \begin{enumerate}
-\item {\em Polymorphic Identifiers} themselves are URIs.  They are typically created by the 
+\item \emph{Polymorphic Identifiers} themselves are URIs.  They are typically created by the 
 	compiler and have a structured runtime representation that can be manipulated
 	at a semantic level rather than as character strings, so consistency can be 
 	maintained.
-\item {\em Scheme handlers} manage a set of resources and, when registered,
+\item \emph{Scheme handlers} manage a set of resources and, when registered,
 	 the namespace that is associated
-	with them.  They primarily turn {\em polymorphic identifiers} into {\em references} and
+	with them.  They primarily turn \emph{Polymorphic Identifiers} into \emph{references} and
 	are created by developers, with a basic set provided by the environment.
-\item {\em References} are created and used transparently by the runtime and compiler
-	to mediate access to the specific resource identified by a {\em polymorphic identifier}.
+\item \emph{References} are created and used transparently by the runtime and compiler
+	to mediate access to the specific resource identified by a \emph{Polymorphic Identifier}.
 	
 	
 \end{enumerate}
@@ -639,12 +633,12 @@ All three elements are plain objects that only become part of the language when 
 with the compiler or runtime.
 
 Figure~\ref{scheme-eval} shows the generic identifier lookup of figure~\ref{identifier-eval}
-extended to polymorphic identifiers.  The basic mechanism is still the same except for the
-addition of {\em scheme handlers} mediating the lookup process.  The left hand side of the
+extended to Polymorphic Identifiers.  The basic mechanism is still the same except for the
+addition of \emph{scheme handlers} mediating the lookup process.  The left hand side of the
 diagram corresponds to the lookup in figure~\ref{identifier-eval}, with the difference that
 the lookup that was previously hardwired into the language is now mediated by the {\tt var}
 scheme handler, which in turn was selected by the {\tt var} scheme that's part of the 
-polymorphic identifier.
+Polymorphic Identifier.
 
 
 \begin{figure}[htbp]
@@ -661,9 +655,9 @@ a remote server following the same four step lookup process, with the steps labe
 number:
 
 \begin{enumerate}
-\item a character sequence is turned into  polymorphic identifier,
+\item a character sequence is turned into  Polymorphic Identifier,
 \item the scheme part of the polymorphic handler is used to select a scheme handler, in this case the {\tt http} handler,
-\item the scheme handler evaluates the {\em scheme-specific} part of the polymorphic identifier ({\tt //deepThought.org/theAnswer})
+\item the scheme handler evaluates the \emph{scheme-specific} part of the Polymorphic Identifier ({\tt //deepThought.org/theAnswer})
 	 and returns a reference, in this case a web-reference,
 \item this (web-)reference mediates access to the actual resource, in this case translating requests to store or retrieve the 
 	resource into HTTP GET or PUT requests via an http client library.
@@ -680,22 +674,22 @@ for turning strings into PIs at runtime.
 
 \section{Schemes and scheme handlers}
 \label{schemes}
-The addition of {\em schemes} to identifiers in order to distinguish different kinds of resources
+The addition of \emph{schemes} to identifiers in order to distinguish different kinds of resources
 and resource access, rather than having to revert to function calls or messages, represents
-the major addition that {\em polymorphic identifiers} bring to a programming language.
-Each scheme is backed by a {\em scheme handler}, which broadly fall into two categories:
- {\em primitive schemes} (section~\ref{primitiveSchemes})
-directly encapsulate access to some sort of resource, while {\em composite schemes} (section~\ref{compositeSchemes})
+the major addition that \emph{Polymorphic Identifiers} bring to a programming language.
+Each scheme is backed by a \emph{scheme handler}, which broadly fall into two categories:
+ \emph{primitive schemes} (section~\ref{primitiveSchemes})
+directly encapsulate access to some sort of resource, while \emph{composite schemes} (section~\ref{compositeSchemes})
 can be used to build new schemes out of existing schemes, forming a little scheme algebra.
 
 
 Scheme handlers are normal objects that respond to a well-defined protocol that can be
 accessed by user level code.  They
 become part of the language by binding them to particular scheme, after which
-any {\em polymorphic identifiers} with that scheme will be resolved by that particular scheme handler.
+any \emph{Polymorphic Identifiers} with that scheme will be resolved by that particular scheme handler.
 Listing~\ref{scheme-scheme-http} shows how an {\tt URLSchemeResolver} instance is bound
 to the {\tt http} scheme and a {\tt FileSchemeResolver} bound to the {\tt file} scheme.  The table 
-binding schemes to resolvers is itself a scheme, the {\em scheme scheme}.
+binding schemes to resolvers is itself a scheme, the \emph{scheme scheme}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=scheme-scheme-http,caption=Binding scheme handlers to the http and file schemes.]
@@ -713,12 +707,12 @@ compatibly.
 Note that perfect interoperability is not guaranteed or required, so there is no notion
 of transparent remote access, for example.  Different scheme handlers will have different supported
 data types, different access modalities and different levels of quality of service.
-Polymorphic identifiers only remove accidental, mostly syntactic, incompatibility for accessing different types
+Polymorphic Identifiers only remove accidental, mostly syntactic, incompatibility for accessing different types
 of resources when those resources are semantically compatible within the parameters
 of the requesting application.
 
 
-The {\em scheme scheme} can also be queried,
+The \emph{scheme scheme} can also be queried,
 so the expression {\bf scheme:http} returns the currently installed http handler, and 
 {\bf scheme:scheme} returns the scheme scheme itself, which will list the currently
 installed schemes.  Listing~\ref{scheme-scheme} shows the schemes installed by
@@ -780,7 +774,7 @@ similar to the way the Unix {\tt cat} command is used to display files\footnote{
 displays a single resource rather than concatenating several.}.
 After the ``hashbang'' in line 1 {\tt stcat} is declared as a method taking the {\tt ref} argument {\tt file} 
 in line 2.
-A {\tt ref} parameter is a polymorphic identifier that is partially evaluated to the reference stage,
+A {\tt ref} parameter is a Polymorphic Identifier that is partially evaluated to the reference stage,
 but without retrieving the value.  Retrieving the value of the {\tt file} parameter is done in line 3,
 and the result is automatically output to {\tt stdout} by {\tt stsh} because the declaration in line
 2 indicates (by default) that {\tt stcat} has a return value.
@@ -801,7 +795,7 @@ your home directory.
 With a current Unix shell all three of these resource types would have required a different
 command or access syntax:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
 web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
-variable, as would using Objective-Smalltalk without polymorphic identifiers .
+variable, as would using Objective-Smalltalk without Polymorphic Identifiers .
 
 The {\tt scurl} command in listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
 it needs to manipulate the identifier.  The {\tt scurl} command
@@ -821,8 +815,8 @@ file:{fileName} := urlref value.
 After the ``hash-bang'' specifying the command interpreter in the first line, line 2 declares
 the script as a method name {\tt scurl} with the single argument {\tt urlref} and no return
 value.  The {\tt urlref} parameter is declared as a {\tt ref}, meaning the string passed will
-be interpreted as a polymorphic identifier that's evaluated to its reference but not further.
-We then retrieve the last component of the polymorphic identifier into the {\tt fileName}
+be interpreted as a Polymorphic Identifier that's evaluated to its reference but not further.
+We then retrieve the last component of the Polymorphic Identifier into the {\tt fileName}
 variable and finally retrieve the value of the {\tt urlref} and store it into the file that
 the {\tt fileName} variable indicates.
 
@@ -843,7 +837,7 @@ In addition, we also wish to integrate classical variable and attribute access.
 
 In-memory stores such as the local execution context (often the stack), object instance
 variables, thread-local and global heap variables are also managed by scheme handlers
-and made available using polymorphic identifiers.  Listing~\ref{local-variables} shows
+and made available using Polymorphic Identifiers.  Listing~\ref{local-variables} shows
 a couple of examples, {\tt ivar:} for instance variable access, {\tt local:} for the current
 method context (``stack''), and {\tt thread:} for thread local variables.
 
@@ -911,7 +905,7 @@ raw http access with two caches, a file cache and an in-memory cache.
 Filter schemes take a single source scheme and apply processing to either
 the identifiers passed to the source, or the data read from or written to the source.
 
-An example of a filter that just modifiers the identifier is the {\em relative}
+An example of a filter that just modifiers the identifier is the \emph{relative}
 scheme, which as the name implies interprets identifiers relative to a base
 identifier in its source scheme, so for example a specific directory in the
 filesystem.  
@@ -949,7 +943,7 @@ Since relative schemes are very common and usually based on a reference, the
 {\tt asScheme} convenience operation on references creates a relative scheme, as shown
 for the {\tt rfc:} scheme in listing~\ref{rfc-scheme-convenience}.
 
-A filter scheme that modifies data while leaving URL alone is the {\em MIME-Type mapper}.
+A filter scheme that modifies data while leaving URL alone is the \emph{MIME-Type mapper}.
 The mapper is parametrized with routines that create objects from data with specific
 mime-types.  
 
@@ -959,14 +953,14 @@ mime-types.
 Binary composite schemes have two source schemes and scheme-specific logic
 to determine which of the source schemes to use for reading and writing data.
 
-A very simple {\em binary scheme} just performs sequential lookup:  try to
+A very simple \emph{binary scheme} just performs sequential lookup:  try to
 retrieve the value from the first source scheme, and if that fails try the second.
 The {\tt var:} scheme from section~\ref{inmemory}  replicates variable/identifier
 lookup rules using a simple sequence of sequential lookup schemes parametrized
 with the underlying storage schemes.
 
 By adding a write-back capability to the sequential lookup scheme, where an element
-retrieved from the second source gets written to the first source, we get a simple {\em cache} scheme.  
+retrieved from the second source gets written to the first source, we get a simple \emph{cache} scheme.  
 The caching http scheme we saw earlier in figure~\ref{fig:http-cached} uses two cache
 separate cache schemes, one with an in-memory cache (the {\tt SiteMap} from section~\ref{inmemory})
 and the other with a file cache that consists of a relative scheme (section~\ref{filterschemes}) 
@@ -1057,7 +1051,7 @@ context drawImage: flickr:3559417932_7208103ed8_m.jpg
 \label{references}
 
 
-As we saw in section~\ref{polymorphic-identifiers} and figures~\ref{scheme-eval} and \ref{identifier-eval}, {\em references}
+As we saw in section~\ref{polymorphic-identifiers} and figures~\ref{scheme-eval} and \ref{identifier-eval}, \emph{references}
 are usually used implicitly to access values and therefore hidden inside the PI system.  However,
 as we saw in section~\ref{identifiers}, having references visible is sufficiently valuable that various
 mechanisms have been created that parallel the built-in identifier lookup mechanism in order to
@@ -1067,9 +1061,9 @@ The reification of identifier lookup in the PI system means that identifiers are
 they just need to be made visible.   Since references are evaluated to get values, the 
 simplest way from an implementation point of view would be for identifiers to always just
 evaluated to references and then have the client interact with the references to get to
-the values, what we have called the {\em identifier aware} style of programming.
+the values, what we have called the \emph{identifier aware} style of programming.
 
-However, {\em identifier oblivious} access, where the identifier is assumed to mean the
+However, \emph{identifier oblivious} access, where the identifier is assumed to mean the
 value is sufficiently more common that it makes sense to have evaluation of not just
 the identifier but also the reference be the default, and stopping the evaluation at the
 reference be the special case.
@@ -1107,11 +1101,11 @@ inconvenience in creation, because we can just use the same syntax as we would
 with a direct reference, only having to prefix a {\tt ref:} at the beginning:  {\tt ref:var:deepThought/theAnswer}.
 
 
-
-
+\subsection{Common behavior}
+\label{common-reference-behavior}
 Apart from retrieving and storing values, references are also used to query manipulate
 metadata, for example wether a reference is bound to a value, which can mean that
-a file or an environment variable exists.
+a file or an environment variable exists (see listing~\ref{isBound}).
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=isBound,caption=Is environment variable set?]
@@ -1120,6 +1114,25 @@ env:bozo := 'hi'
 ref:env:bozo isBound  // true
 \end{lstlisting}
 \end{figure}
+
+References also support a generic API for tree-based structures.   Apart from being used
+by the runtime to support path-based access, these APIs are also used to export arbitrary
+schemes as a user-level filesystem using FUSE or as a web-server using libmicrohttp.
+Listing~\ref{fileserver} shows a server that exports a directory via http.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=fileserver,caption=Exporting a directory via http.]
+#!/usr/local/bin/stsh
+#-<void>fileserver:<ref>dir
+context loadFramework:'MPWSideWeb'
+server := dir -> 
+         (Cache memoryCache)  -> 
+         (MPWSchemeHttpServer serverOnPort:8081)
+server start:nil.
+\end{lstlisting}
+\end{figure}
+
+
 
 \subsection{Scheme-specific behavior}
 
@@ -1160,19 +1173,73 @@ the argument {\tt 42}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=message-via-ref,caption=Message sending via reference and with syntactic sugar]
-ref:deepThought send setTheAnswer:42
-deepThought setTheAnswer:42
+ref:deepThought send setTheAnswer:ref:newAnswer
+deepThought setTheAnswer:newAnswer
 \end{lstlisting}
 \end{figure}
 
 As with obtaining values from references, line 1 is consistent but would be too inconvenient for day to day use,
 so line 2 shows the syntactic sugar version that is converted by the compiler to what's in line 1.  The {\tt send}
 HOM implements the simple synchronous message send that is default Smalltalk semantics.   Arguments
-are passed simply by value, as we have the trivial {\tt ref:} prefix if we want to send references instead.
+are passed as references to the HOM, which can then decide wether to evaluate them.  The default {\tt send}
+HOM evaluates all references to implement \emph{pass by value} semantics.
 
 References can and do implement other message passing semantics, such as asynchronous sends, future
-sends or remote message sending.  As such, they take over the role of {\em Proxies} for mediating non-default
+sends or remote message sending.  As such, they take over the role of \emph{Proxies} for mediating non-default
 message sending semantics.  
+
+
+Higher Order Messaging is also used to construct URL arguments, as shown in listing~\ref{url-args}.  The {\tt withArgs:}
+HOM takes its message argument, in this case {\tt doi:'10.1.1.41.7628'} and converts into URL arguments,
+in this case {\tt ?doi=10.1.1.41.7628}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=url-args,caption=URL arguments via reference and higher order message.]
+  host := 'citeseerx.ist.psu.edu'.
+  viewCiteSeer:=ref:http://{host}/viewdoc/summary.
+  (viewCiteSeer withArgs doi:'10.1.1.41.7628') value
+\end{lstlisting}
+\end{figure}
+
+
+\subsection{Assignment}
+
+Assignment is one of the few special operations in Smalltalk, like identifier de-reference it cannot be overridden.
+The reason for the special nature of assignment is actually closely related to the monomorphic behavior
+of identifiers:  normal lookup rules for identifiers implicitly means evaluation proceeds to the value, but in order to implement the left
+hand side of an assignment, in order to actually bind a new value to an identifier, we need to stop evaluation
+at the reference, so the left hand side is at a different meta-level than the right hand side\cite{kay-assignment}.
+
+With first class references, evaluation is always via the reference, so assignment is just a plain, though unsugared
+message send that has references as both its receiver and argument.  The references then interact to resolve
+the assignment, and can implement special behavior such as creating a symbolic link for a file-references assigned
+to a file (see figure~\ref{symbolic-link}).
+
+With assignment being a complex operation, we must now deal with the possibility of failure.  Assignments 
+return a result that indicates status.  This status can also report progress for assignments that are
+non-atomic, such as a file-copy or web-download.
+
+
+
+\subsection{Kinds of references}
+\label{refkinds}
+In theory, every scheme can be accompanied by a specific kind of reference.  In practice, we have 
+seen most references fall in one of three different categories:
+
+\begin{enumerate}
+\item Indexed references, where the reference is an offset into some sort of context, for
+	example a stack frame or object.
+\item Messaging references, where the reference corresponds to a set of messages to
+	access the value.
+\item Generic references, where the original identifier is preserved and/or converted to
+	a string that is used as a parameter to a third party API, for example file names,
+	web URLs or environment variable names.
+\end{enumerate}
+
+Another distinction we've seen is that some references are context-sensitive, while some
+appear to be absolute references not requiring context.  The evaluation mechanism always
+provides a context, which is ignored by some references.  
+
 
 \section{Parametrized identifiers}
 \label{parametrized}
@@ -1188,7 +1255,7 @@ at runtime.  Curly brackets \{\} denote a section of the path that should be eva
 the return value used as part of the access path.
 
 Listing~\ref{rfc-local-ref} recasts the example in listing~\ref{rfcs-directory}, retrieving a specific RFC from a 
-the {\tt rfcs} directory in the user's home directory using polymorphic identifiers.  It is almost
+the {\tt rfcs} directory in the user's home directory using Polymorphic Identifiers.  It is almost
 as concise as the Unix shell equivalent {\tt \$HOME/rfcs/\$rfcName}.
 
 \begin{figure}[htbp]
@@ -1207,41 +1274,38 @@ in Listing~\ref{home-scheme}.
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=home-scheme,caption={\tt home:} scheme and {\tt rfc:} scheme.]
   scheme:home := ref:file:{env:HOME} asScheme.
-  scheme:rfcs := ref:home/rfcs
+  scheme:rfc := ref:home/rfcs
 \end{lstlisting}
 \end{figure}
 
+This {\tt rfc:} scheme for a local directory can easily be extended with a sequential lookup scheme
+and the {\tt rfc:} scheme from section~\ref{filterschemes} to provide a multi-level lookup mechanism
+for RFCs.
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
-\mpw{here}
 
-\section{Implementation}
+\section{Implementation Details}
 \label{implementation}
-\emph{Polymorphic Identifiers} have been implemented as part of Objective-Smalltalk \cite{objst},
 
+As discussed earlier \emph{Polymorphic Identifiers} have been implemented as part of Objective-Smalltalk \cite{objst},
 a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-apple} runtime, 
-in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby}.
+in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby} in that Objective-Smalltalk classes,
+objects and messages are essentially indistinguishable from their Objective-C counterparts.
 
-Objective-C is an ahead-of-time-compiled, hybrid, and dynamic object oriented programming language
-that is an extension of C.  The object-oriented extensions to C are closely modeled on
-Smalltalk, with dynamic single-dispatch at runtime, a keyword syntax and classes as
-largely first-class objects.
+Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to handler URIs as 
 
-Objective-Smalltalk objects and classes are Objective-C objects, they are created using
-the same functions and data structures and are indistinguishable at runtime.
-The same goes for Objective-Smalltalk methods, which are also indistinguishable from
-Objective-C methods, making Objective-Smalltalk in a sense a meta-circular language
-that is written in itself, or more precisely written in variants of itself \cite{kleinvm}\cite{squeak}.
-
-
+Scheme handlers are often simple enough that we can include an almost complete scheme-handler below.
 
 \subsection{A simple example scheme}
 
 Listings~\ref{get-env}-\ref{hasValue-env} show the implementation of a simple scheme,
-the env-scheme that provides access to Unix environment variables.  While this scheme
-is actually string-based, that fact is hidden and the strings are not exposed to the user.
-Listing~\ref{get-env}
+the env-scheme that provides access to Unix environment variables.  This scheme is
+one that uses generic references (see section~\ref{refkinds}), so the scheme is used
+not only for generating references, but the references also call back into the scheme
+to resolve themselves.
+
+Listing~\ref{get-env} 
 shows the {\bf bindingForName:inContext:} method that is the main access point for
 converting from an identifier to a binding.  In this case, a generic binding object is returned
 that simply stores the name of the identifier and lets the scheme that created it resolve
@@ -1304,28 +1368,92 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 \end{figure}
 
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=url-args,caption=URL arguments via reference and higher order message.]
-  host := 'citeseerx.ist.psu.edu'.
-  viewCiteSeer:=ref:http://{host}/viewdoc/summary.
-  viewCiteSeer getWithArgs doi:'10.1.1.41.7628'.
-\end{lstlisting}
-\end{figure}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
 \section{Evaluation}
 \label{evaluation}
 
-\mpw{KVC vs. PI performance, use MPWVarRef, caching works vs. caching doesn't work}
+While Polymorphic Identifiers are still very much in the experimental stage, our
+results so far are very encouraging.  What started out as just a hunch, that making
+identifiers pluggable rather than relying on just messaging or a level of indirection
+via strings might prove interesting, has been more than confirmed, and has proven
+very productive.
 
-\mpw{concise without obfuscation}
+While some effects were anticipated, others, such as the ability to solve the
+``assignment problem'' or the discovery of a composition mechanism for
+scheme handlers proved serendipitous.  Subjectively, programming with Polymorphic
+Identifiers seems natural and code appears to gain conciseness (as the examples
+have shown) without becoming more obscure.
 
-\mpw{identifier manipulation better than just strings?}
 
-\mpw{flickr with cache (because easy to create), vs. NSURL that caches before the image}
+\subsection{Performance}
 
-\mpw{cached web-server vs. Apache}
+As should be expected, having the compiler help with lookups can give a tremendous
+boost to lookup operations compared to evaluating strings at runtime.  Table~\ref{var-speed}
+and figure~\ref{var-speed-graph} 
+compare evaluating the identifier {\tt var:stream/target/target} with using the Objective-C 
+Key Value Coding equivalent {\tt [stream valueForKeyPath:@"target.target"]}.
+
+We use the underlying Objective-C implementation for both the reference and its 
+comparison because Objective-Smalltalk is currently an interpreted environment with
+a simple AST-walker, so interpretation overhead makes performance differences in
+the underlying lookup disappear.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|r|r|r|r|r|r|r|r|r|r|r|r|} \hline
+Accesses  & KVC& {\tt var:}   & ratio	\\ 
+ & ($\mu$s) & ($\mu$s) & \\ \hline
+1 & 14 & 10 & 1.4   \\ % \hline
+10 & 22 & 10 &   2.2 \\   % \hline
+100 & 100 & 14 &  7.0\\   % \hline
+1000 & 1227 & 29 &  42.3  \\  % \hline
+10000 & 8345 & 186 &   44.9 \\   % \hline
+100000 & 73036 & 1730 &    42.2 \\ \hline
+\end{tabular}
+\caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access}
+\label{var-speed}
+\end{center}
+\end{table}
+
+
+\begin{figure}
+\includegraphics[scale=0.5,page=2]{kvc-vs-var.pdf}
+\caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access, log scale}
+\label{var-speed-graph}
+\end{figure}
+
+For large number of operations, access via the {\tt var:} scheme (or more precisely its references) is
+around 40 times faster than using Key Value Coding.  This result isn't surprising, since we
+moved the string lookup out of the inner loop that performs the access.
+
+Another serendipitous discovery we briefly mentioned in section~\ref{common-reference-behavior} was
+the fact that schemes could be used not only within a program, but also bridged, for example to be used
+as web-servers using an http-adapter, for example the file-server shown in figure~\ref{fileserver}.
+
+Table~\ref{http-server-speed} shows the performance, in requests/s of several different kinds of (composed)
+schemes, with the apache web server as comparison.  
+
+\begin{table}
+\begin{tabular}{|l|c|c|r|r|r|r|r|r|r|r|r|} \hline
+Server   &  Requests/s    \\ \hline
+apache & 	14876	      \\ % \hline
+home-scheme (file+relative) &  19231   \\ % \hline
+home-scheme (+cached)  &  23398  \\ % \hline
+memory-scheme (only) &  31491  \\ \hline
+
+\end{tabular}
+\caption{Performance of different schemes bridged to http vs. apache}
+\label{http-server-speed}
+\end{table}
+
+\begin{figure}
+\includegraphics[scale=0.5,page=2]{server-perf.pdf}
+\caption{Performance of different schemes bridged to http vs. apache}
+\label{http-server-speed-graph}
+\end{figure}
+
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -1373,13 +1501,13 @@ as the current iChat status message.
 \end{lstlisting}
 \end{figure}
 
-With \emph{polymorphic identifiers}, the same operation can be expressed
+With \emph{Polymorphic Identifiers}, the same operation can be expressed
 much more concisely as a simple assignment between two URIs,
 as shown in Listing~\ref{NonAppleScript}
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=NonAppleScript,caption=Access to applications via \emph{polymorphic identifiers}.]
+\begin{lstlisting}[style=L,label=NonAppleScript,caption=Access to applications via \emph{Polymorphic Identifiers}.]
   app:iChat/statusMessage := app:iTunes/currentTrack/name.
 \end{lstlisting}
 \end{figure}
@@ -1441,14 +1569,14 @@ or behaviors.
 
 \subsection{Domain specific languages}
 
-\emph{Polymorphic identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
+\emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
 in that they allow domain-specific language elements to be added to a language, rather
 than having to create a completely new language with an external DSL or attempt to 
 achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
 
-Like polymorphic embedding of DSLs \cite{polydsl}, \emph{polymorphic identifiers} allow
+Like polymorphic embedding of DSLs \cite{polydsl}, \emph{Polymorphic Identifiers} allow
 a single syntax to be used with multiple, pluggable semantic interpretations permitting
-composition of functionality\cite{embeddeddsl}.  However, \emph{polymorphic identifiers}
+composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Identifiers}
 are applicable to general purpose programming languages, not jus DSLs, while
 at the same time restricting their focus to just the identifiers used.
 
@@ -1484,7 +1612,7 @@ style.
 
 The Wheat language \cite{wheat} embedded an entire programming language
 and system into a Web-server, accessing all resources and methods via
-HTTP URLs.  \emph{Polymorphic identifiers} allow resources, but these resources
+HTTP URLs.  \emph{Polymorphic Identifiers} allow resources, but these resources
 are not required to use a specific communications mechanism.
 
 
@@ -1513,7 +1641,7 @@ for computation as shown in Listing~\ref{activeuri}.
 
 The {\bf base} is a function name, the {\bf name} an argument name and the
 {\bf uri} an argument URI.
- While \emph{polymorphic identifiers} allow processing to be
+ While \emph{Polymorphic Identifiers} allow processing to be
 hidden behind a resource URI, they also allow messaging to be expressed
 as messaging when that is the intent.
 
@@ -1522,17 +1650,17 @@ as messaging when that is the intent.
 \section{Summary and Outlook}
 \label{summary-and-outlook}
 
-We examined both built-in and user-defined identifiers in programming languages 
-and separated their usage patterns into an {\em identifier-oblivious} style where
-the identifier is used by itself to denote its bound value and the 
-an {\bf identifier-aware} style where the identifier itself is used as a first class value
-and its value can only be accessed indirectly.
+We have introduced \emph{Polymorphic Identifiers} and shown how they
+solve the problem of trying to make resource access polymorphic without
+the code duplication caused by a pure message-oriented approach or the
+numerous problems of the workaround of using string-based identifiers.
 
-While each style is appropriate in different usage-scenarios, current languages 
-tie the usage style to wether the identifier is built-in or user-defined.  \emph{Polymorphic
-identifiers} remove the distinction between user-defined and built-in identifiers by having
-a single type of user-extensible identifier that can be used in both identifier-oblivious
-and identifier-aware styles.
+\emph{Polymorphic Identifiers} allow the substitution of alternate implementations,
+for example different caching http resolvers, as well as the introduction of 
+application-specific schemes that are completely custom ({\tt rfc:} and {\tt flickr}).
+Custom scheme handlers can be implemented as normal objects and added
+to the language, or even composed from pre-existing handlers and
+combinators.
 
 With a user-extensible identifier architecture, it becomes possible to add abstraction
 and information-hiding capabilities to identifiers and expand the use of REST-style
