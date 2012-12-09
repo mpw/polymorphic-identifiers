@@ -274,10 +274,9 @@ dereference {\tt *}, such indirect references are not available in Smalltalk.
 
 \subsection{Messages as identifiers}
 
-Encapsulation and the potential for polymorphic behavior can be achieved by using
-messages to access the value in question.  Listing~\ref{variable-lookup} shows 
-obtaining or setting {\tt theAnswer} by interacting with the {\tt deepThought}\cite{adams1997hitchhiker} object,
-as shown in listing~\ref{message-access}.
+Encapsulation and the potential for polymorphic behavior can be achieved by sending 
+messages to objects in order to get and set the value in question, for example the
+{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=message-access,caption=Retrieve and store value via message sends.]
@@ -286,22 +285,17 @@ as shown in listing~\ref{message-access}.
 \end{lstlisting}
 \end{figure}
 
-Due to the fact that resource access is hidden behind a message send that will cause
-a method to execute, the client does not know wether {\tt deepThought} will just
-quickly return a stored representation or instead go off to compute the answer for 
-several hundred million years. 
+Wether the the method executed in response to the message accesses a resource or computes
+a result for several hundred million years is hidden from the client, therefore allowing developers to
+implement alternative resource access mechanisms, unlike plain identifiers.
 
-While this level of encapsulation, with its potential for polymorphic behavior, is 
-beneficial, it does come at a cost:   instead of the factored 
-representation of an identifier and two verbs, {\tt get} and {\tt set},
-this is multiplied out for each and every visible attribute of 
-each and every class. 
- 
-This entanglement means we  
-must provide two trivial accessor methods like the ones in listing~\ref{trivial-accessors} for each actual resource we wish
-to access.  Studies show that around 5\% of Java code consists of such trivial accessors\cite{Spinellis:2002:MPC:510857.510868}, and although the authors of said study argue that this is \emph{not} enough
-to warrant special treatment, it should be noted that the prevalence of actual polymorphic 
-message sends is also reported to be around 5\% \cite{Holzle:1991:ODO:646149.679193}.
+This added flexibility comes at the cost of tangling resource names with the operations on those
+resources (  $({\tt get}|{\tt set}) \times {\mbox{\em resourceName}} ) $ %= ({\tt getTheAnswer},{\tt setTheAnswer}) $), thus
+increasing the number of identifiers by a factor of two, and also requiring trivial accessor methods such as the
+ ones in Listing~\ref{trivial-accessors} for each of these messages, which can account for 5\% of Java code~\cite{Spinellis:2002:MPC:510857.510868},
+
+%and though the paper argues that this 5\% of code is \emph{not} enough
+%to warrant special treatment,  the prevalence of polymorphic message sends is also around 5\% according to~\cite{Holzle:1991:ODO:646149.679193}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=trivial-accessors,caption=Trivial accessors.]
@@ -312,12 +306,11 @@ setTheAnswer:newAnswer
 \end{lstlisting}
 \end{figure}
 
-As we should expect, all that unfactored code gets us into trouble if we want 
-to make changes:   if we want to globally change how the {\tt set}
-operation works, for example, either because we want a different storage
-mechanism or some additional behavior,
-we must manually change the trivial accessor for every attribute to which
-we want to apply this change.
+Although automatic generation of accessors can lessen the burdens of trivial accessors, it doesn't help the fundamental brittleness of 
+having resource access scattered throughout the code-base: if we want to implement an alternative resource access scheme or 
+access to other kinds of resources such as files, we  have to implement or update the accessor methods for each specific resource individually,
+rather than once for each resource type or access methods as a whole.
+
 
 
 As long as we can compute messages to send at runtime,
@@ -341,18 +334,18 @@ In order to handle this reference to an attribute, we need to store the base obj
 the getter and the setter messages, and also provide all these elements when
 initializing the object.
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=parametrized-message-access,caption=Parametrized access via messages.]
-self base performSelector:self setter 
-	       withObject:self getContents.
-self setContent:(self base performSelector:self getter)
-\end{lstlisting}
-\end{figure}
+%\begin{figure}[htbp]
+%\begin{lstlisting}[style=numbers,label=parametrized-message-access,caption=Parametrized access via messages.]
+%self base performSelector:self setter 
+%	       withObject:self getContents.
+%self setContent:(self base performSelector:self getter)
+%\end{lstlisting}
+%\end{figure}
 
-Apart from the problems with duplications, using messages as the interface for resource
-access also poses difficulties with multi-element access paths.  These need to be decomposed
-into multiple distinct message sends, and references such as the widget in figure~\ref{ui-widget-msg-access}
-would need to be extended to arrays of message selectors.
+%Apart from the problems with duplications, using messages as the interface for resource
+%access also poses difficulties with multi-element access paths.  These need to be decomposed
+%into multiple distinct message sends, and references such as the widget in figure~\ref{ui-widget-msg-access}
+%would need to be extended to arrays of message selectors.
 
 \subsection{Strings as identifiers}
 
@@ -588,18 +581,14 @@ of polymorphic message sends with the extensibility and flexibility of string-ba
 \label{polymorphic-identifiers}
 %\epigraph{A change in perspective is worth 80 IQ points}{Alan Kay}
 
-The irreducible code duplication and frequent need to embed (mini-)languages into the
-source code as strings we saw in section~\ref{identifiers} suggests that the issue needs to be
-solved at the linguistic level.
-
-Instead of using messaging or strings to get polymorphic resource access, Polymorphic Identifiers
-generalize direct references,  just like messaging generalized function calls and made them polymorphic.
-Polymorphic Identifiers combine the techniques for resource access discussed in the previous 
+Polymorphic Identifiers
+generalize direct references,  just like messaging generalized function calls and made them polymorphic,
+by combining the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
 \item extending the syntax for identifiers to that of URIs,
 \item reifying the identifier lookup process and
-\item making it user-extensible with open-implementation techniques.
+\item making it user-extensible with open-implementation techniques~\cite{OpenImplementations}.
 \end{enumerate}
 
 Listing~\ref{polymorphic-identifier-examples} recasts the examples from section~\ref{identifiers} using
@@ -647,7 +636,7 @@ The Polymorphic Identifier system consists of three basic parts:
 	 the namespace that is associated
 	with them.  They primarily turn \emph{Polymorphic Identifiers} into \emph{references} and
 	are created by developers, with a basic set provided by the environment.
-\item \emph{References} are created and used transparently by the runtime and compiler
+\item \emph{References} are created and used transparently by the run-time and compiler
 	to mediate access to the specific resource identified by a \emph{Polymorphic Identifier}.
 	
 	
