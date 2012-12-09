@@ -46,14 +46,14 @@
 	<key>Creator</key>
 	<string>Marcel Weiher</string>
 	<key>DisplayScale</key>
-	<string>1 0/72 in = 1 0/72 in</string>
+	<string>1 0/72 in = 1.0000 in</string>
 	<key>GraphDocumentVersion</key>
 	<integer>8</integer>
 	<key>GraphicsList</key>
 	<array>
 		<dict>
 			<key>Bounds</key>
-			<string>{{257.62698933288266, 181.04052638587041}, {115, 24}}</string>
+			<string>{{249.53621987105942, 186.28247536855113}, {139, 24}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -79,7 +79,7 @@
 				<key>ID</key>
 				<integer>18</integer>
 				<key>Offset</key>
-				<real>-15.893486022949219</real>
+				<real>-21.60211181640625</real>
 				<key>Position</key>
 				<real>0.66074389219284058</real>
 				<key>RotationType</key>
@@ -113,14 +113,14 @@
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc
 
-\f0\i\fs24 \cf0 value(ref(identifier))}</string>
+\f0\i\fs24 \cf0 get(reference(identifier))}</string>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{89.994320409327116, 163.46504168194647}, {78, 24}}</string>
+			<string>{{33.169065101701051, 184.40032421256996}, {115, 24}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -146,9 +146,9 @@
 				<key>ID</key>
 				<integer>17</integer>
 				<key>Offset</key>
-				<real>-26.804576873779297</real>
+				<real>-40</real>
 				<key>Position</key>
-				<real>0.38829788565635681</real>
+				<real>0.40130484104156494</real>
 				<key>RotationType</key>
 				<integer>0</integer>
 			</dict>
@@ -180,7 +180,7 @@
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc
 
-\f0\i\fs24 \cf0 ref(identifier)}</string>
+\f0\i\fs24 \cf0 reference(identifier)}</string>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
@@ -198,15 +198,15 @@
 			<key>Points</key>
 			<array>
 				<string>{215, 183}</string>
-				<string>{306, 179}</string>
-				<string>{350.61155347812502, 152.52322435851116}</string>
+				<string>{295, 184}</string>
+				<string>{350.39582082993962, 152.29066807665524}</string>
 			</array>
 			<key>Style</key>
 			<dict>
 				<key>stroke</key>
 				<dict>
 					<key>HeadArrow</key>
-					<string>FilledArrow</string>
+					<string>0</string>
 					<key>Legacy</key>
 					<true/>
 					<key>LineType</key>
@@ -214,7 +214,7 @@
 					<key>Pattern</key>
 					<integer>1</integer>
 					<key>TailArrow</key>
-					<string>0</string>
+					<string>FilledArrow</string>
 				</dict>
 			</dict>
 		</dict>
@@ -230,9 +230,9 @@
 			<integer>17</integer>
 			<key>Points</key>
 			<array>
-				<string>{145.32291666666666, 126}</string>
-				<string>{156, 167}</string>
-				<string>{205, 181.93333333333334}</string>
+				<string>{79.822916666666671, 112}</string>
+				<string>{90.5, 153}</string>
+				<string>{205, 182.11016949152543}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -437,7 +437,7 @@
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{118, 92}, {51, 14}}</string>
+			<string>{{52.5, 78}, {51, 14}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -495,8 +495,8 @@
 			<integer>9</integer>
 			<key>Points</key>
 			<array>
-				<string>{174.5, 119.10696701202525}</string>
-				<string>{238.00001341068537, 119.32607690551248}</string>
+				<string>{109, 107.44613438544026}</string>
+				<string>{238.00155057144028, 117.6253320831148}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -520,7 +520,7 @@
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{112.5, 112}, {62, 14}}</string>
+			<string>{{47, 98}, {62, 14}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -773,7 +773,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2012-11-11 15:43:13 +0000</string>
+	<string>2012-12-09 17:06:33 +0000</string>
 	<key>Modifier</key>
 	<string>Marcel Weiher</string>
 	<key>NotesVisible</key>
