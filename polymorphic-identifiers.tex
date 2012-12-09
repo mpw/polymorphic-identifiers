@@ -5,9 +5,13 @@
 %-----------------------------------------------------------------------------
 
 
-\documentclass[preprint,authoryear]{acm_proc_article-sp}
+\documentclass[preprint,authoryear]{llncs}
+
 
 \usepackage{ifthen}
+\usepackage{pifont}
+
+\usepackage[pdftex]{graphicx}
 
 \usepackage{amsmath}
 \usepackage{epigraph}
@@ -47,11 +51,15 @@
 
 \newboolean{showcomments}
 \setboolean{showcomments}{true}
+
+
+
 \ifthenelse{\boolean{showcomments}}
   {\newcommand{\mynote}[2]{
       {\color{red}
     \fbox{\bfseries\sffamily\scriptsize#1}
-       {\small$\blacktriangleright$\textsf{\emph{#2}}$\blacktriangleleft$}
+%       {\small$\blacktriangleright$\textsf{\emph{#2}}$\blacktriangleleft$}
+       {\small \textsf{\emph{#2}} }
     % \marginpar{\fbox{\bfseries\sffamily#1}}
         }
    }
@@ -69,6 +77,8 @@
 \newcommand\rh[1]{\mynote{Robert}{#1}}
 
 
+
+
 \begin{document}
 
 %\conferenceinfo{WXYZ '05}{date, City.} 
@@ -80,61 +90,69 @@
 
 
 \title{Polymorphic Identifiers}
-%\subtitle{Subtitle Text, if any}
+\subtitle{Unified resource access in Objective-Smalltalk}
 
-\numberofauthors{2}
-\author{
-\alignauthor Marcel Weiher\\
-       \affaddr{metaobject ltd.}\\
-       \email{marcel@metaobject.com}
-\alignauthor Robert Hirschfeld\\
-       \affaddr{Hasso Plattner Institut}\\
-       \email{}
-}
+\author{Marcel Weiher\inst{1} \and Robert Hirschfeld\inst{2}}
+\institute{metaobject ltd. \email{marcel@metaobject.com} \and Hasso Plattner Institut \email{robert.hirschfeld@hpi.uni-potsdam.de}}
+
+
+%\numberofauthors{2}
+%\author{
+%\alignauthor Marcel Weiher\\
+%       \affaddr{metaobject ltd.}\\
+%       \email{marcel@metaobject.com}
+%\alignauthor Robert Hirschfeld\\
+%       \affaddr{Hasso Plattner Institut}\\
+%       \email{}
+%}
 
 \maketitle
 
 \begin{abstract}
 
 In object oriented programming, direct value (resource) access is generally discouraged or 
-even made impossible, being replaced with access mediated via messaging in order to
-gain the benefits of mediated access, encapsulation and polymorphism.
+even made impossible, being replaced with access via messaging in order to
+gain the benefits of mediated access, such as encapsulation and polymorphism.
 
-However, neither messaging itself nor resource access mechanisms built strictly on top
+However, neither messaging itself nor resource access mechanisms built on top
 of messaging achieve these goals, instead causing code duplication, tying varying 
 implementations to specific interfaces, causing brittleness in the face of changes as well
 as performance problems and making parametrized access difficult.
 
 We propose \emph{Polymorphic Identifiers} as a reified and open replacement for both
-language- and user-provided identifier mechanism. 
+language- and user-provided identifier mechanism.  
+
+\rh{Hier fehlt noch etwas}
 
 
 \end{abstract}
 
-\category{D.3.3}{Programming Languages}{Language Constructs and Features}
+% \category{D.3.3}{Programming Languages}{Language Constructs and Features}
 
-\terms{language, design}
-\keywords{Polymorphic Identifiers} % NOT required for Proceedings
-\setlength{\epigraphrule}{0pt}
+%\terms{language, design}
+%\keywords{Polymorphic Identifiers} % NOT required for Proceedings
+%\setlength{\epigraphrule}{0pt}
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
 \section{Introduction}
 
+\rh{experimental?}
 
-We report on an experimental
-technique for expanding our ability to directly name and reference many different 
+We report on \emph{Polymorphic Identifiers}, an experimental
+technique for expanding our ability to directly name and reference different 
 resources
-in programming languages using a common identifier and identifier resolution
+in programming languages using a common identifier syntax and resolution
 mechanism.
-These \emph{Polymorphic Identifiers} are not only user-extensible,
-but can also be manipulated in the programming language, making them first class 
-entities.
+%These \emph{Polymorphic Identifiers} are not only user-extensible,
+%but can also be manipulated in the programming language, making them first class 
+%entities.
 
-Our starting point is Smalltalk, where we have objects
-that communicate via messages\cite{Goldberg1983}, although we use the Apple's Cocoa
-class library\cite{Cocoa}.  Identifiers are used to identify 
-objects, but are early bound by the compiler.  Late-binding of names, encapsulation,
+
+
+Our starting point is a dialect of Smalltalk, where we have objects
+that communicate via messages\cite{Goldberg1983}, but the identifiers that are used to identify 
+objects are early bound by the compiler.  Late-binding of names, encapsulation,
 and polymorphic behavior can only be achieved via message-sends.
 
 
@@ -142,19 +160,24 @@ Identifiers that need to point to other entities or be used in different ways mu
 by the programmer and cannot be used interchangeably with built in identifiers.  
 
 The contributions of this paper are
-\begin{enumerate} \item a uniform, composable and extensible resource access mechanism for all
-resources in a program, \item  a way of integrating that access mechanism naturally into the language for
+\begin{enumerate} 
+
+\item a uniform, composable and extensible resource access mechanism for all
+resources in a program, 
+\item  a way of integrating that access mechanism naturally into the language for
 direct, \emph{identifier oblivious} access and
 \item a uniform treatment of references for indirect, \emph{identifier aware} access.
 \end{enumerate}
 
-In section~\ref{identifiers}, we will look at different ways of accessing resources and see
+
+
+In section~\ref{identifiers}, we  look at different ways of accessing resources and show
 the shortcomings of those approaches.  In section~\ref{polymorphic-identifiers}, we 
 introduce \emph{Polymorphic Identifiers} as a reification, abstraction and extension of existing 
 identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
 system, \emph{scheme resolvers} (section~\ref{schemes}), first class \emph{references} (section~\ref{references}),
-parametrized identifiers (section~\ref{parametrized}), and finally some implementation details (section~\ref{implementation}).
-In section~\ref{evaluation} we evaluate the system and look at related work in section~\ref{related-work}.
+parametrized identifiers (section~\ref{parametrized}), and  implementation aspects (section~\ref{implementation}).
+In section~\ref{evaluation} we evaluate the Polymorphic Identifiers and discuss related work in section~\ref{related-work}.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -169,78 +192,85 @@ In section~\ref{evaluation} we evaluate the system and look at related work in s
 
 
 Identifiers that name resources come in many different forms ranging from local,
-global or instance variables to names for disk files or URIs pointing to network resources.
+global or instance variables to names for disk files or Universal Resource Identifiers (URIs)~\cite{rfc3986} pointing to network resources.
 
 \begin{figure}[htbp]
 \begin{center}
-\includegraphics[scale=0.55,page=1]{basic-storage.pdf}
+\includegraphics[scale=0.5,page=1]{basic-storage.pdf}
 \caption{Generic identifier lookup}
 \label{identifier-eval}
 \end{center}
 \end{figure}
 
 Whatever the specific type, the relationship between the actual identifier and the
-final value looks like figure~\ref{identifier-eval}, with slight variations:   there is
-the identifier itself, which is a human-readable character string, there is some sort
+final value looks like figure~\ref{identifier-eval}, with slight variations:   there is 
+the identifier itself, which is a human-readable character string, there is some kind
 of store that has identifiable slots or cells and there is a value stored in one of those
-cells.   In order to retrieve a value, the identifier is converted to a value using the
-hypothetical \emph{ref(identifier)} function and then the reference is used to look up an actual
+cells.   In order to retrieve a value, the identifier is first converted to a reference using a
+ \emph{reference(identifier)} function and then the reference is used to look up an actual
 value from a slot using the \emph{value(reference)} function.
 
 
-We will look at 4 distinct types of identifiers that all follow this basic pattern:  language-supported 
-\emph{direct reference}, where identifiers directly resolve to values, \emph{message-based} lookup
-used for encapsulation,
-\emph{string-based} lookup often used with extensible data structures or filesystem access and
-finally reified object access.   While each of these approaches solves a part of the problem,
+We will look at four distinct types of identifiers that all follow this basic pattern:  language-supported 
+\emph{plain identifiers}, where identifiers directly resolve to values, the use of \emph{messages as identifiers} 
+for encapsulation, the use of \emph{strings as identifiers} for extensible data structures or filesystem access, and
+\emph{reified identifiers}.
+
+ While each of these approaches solves a part of the problem,
 none of them is satisfactory in the end, either lacking capability and extensibility or leading to
-irreducible code-duplication, brittleness and simply cumbersome code.
+irreducible code-duplication and brittleness.
 
 \subsection{Plain identifiers}
 \label{direct-reference}
-Like most programming languages, our dialect of Smalltalk, called
-\emph{Objective-Smalltalk} allows you to just write 
-an identifier by itself, and this will not just reference the slot that the identifier names, but also
-automatically retrieve the value stored in that slot.  Storing into the slot is accomplished with
-the assignment operator {\tt :=}.    Assuming I have a variable that contains {\tt theAnswer} to 
-life, the universe and everything, I can access it as shown in listing~\ref{variable-lookup}.
+Like most programming languages, Smalltalk allows you to just write 
+an identifier by itself, and this will automatically retrieve the value stored in the slot referenced by the identifier, for
+example line 1 of Listing~\ref{variable-lookup} for the identifier {\tt theAnswer}.
+Storing into the slot is accomplished with
+the assignment operator {\tt :=}, as shown in line 2.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=variable-lookup,caption=Interacting with a local resource.]
-  theAnswer.
-  theAnswer := 42.
+\begin{lstlisting}[style=L,label=variable-lookup,caption=Retrieve and store value via plain identifier.]
+theAnswer.
+theAnswer := 42.
 \end{lstlisting}
 \end{figure}
 
-Due to the fact that the programmer does not, and cannot, deal with either the identifier
-or the reference, but names the value using the identifier, we call this an \emph{identifier oblivious}
-access.  This type of direct access is only possible for a few specific variable types
-(local, instance, class, pool and global) and supported directly by the compiler.
+Plain identifiers are bound early and resolved directly.  Developers cannot extend them to refer to
+new types of objects such as files or define new access mechanisms.  Whereas some languages
+such as C and C++ allow references using the {\em pointer-of} operator {\tt \&} and pointer
+dereference {\tt *}, such indirect references are not available in Smalltalk.
 
-If it were possible to make the lookup explicit, what we call \emph{identifier aware},
-the code would look something like listing~\ref{reified-variable-lookup}.  Apart
-from the infinite recursion ({\tt thisContext}  also needs to be looked up),
-forcing this style would be prohibitive from both effort/readability and performance
-perspectives.
+%Due to the fact that the programmer does not, and cannot, deal with either the identifier
+%or the reference, but names the value using the identifier, we call this an \emph{identifier oblivious}
+%access.  This type of direct access is only possible for a few specific variable types
+%(local, instance, class, pool and global) and supported directly by the compiler.
+
+%If it were possible to make the lookup explicit, what we call \emph{identifier aware},
+%the code would look something like listing~\ref{reified-variable-lookup}.  Apart
+%from the infinite recursion ({\tt thisContext}  also needs to be looked up),
+%forcing this style would be prohibitive from both effort/readability and performance
+%perspectives.
 
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=reified-variable-lookup,caption=Reified local resource access.]
-  (thisContext slotAtName:'theAnswer') get.
-  (thisContext slotAtName:'theAnswer') set:42.
-\end{lstlisting}
-\end{figure}
+%\begin{figure}[htbp]
+%\begin{lstlisting}[style=L,label=reified-variable-lookup,caption=Reified local resource access.]
+%  (thisContext slotAtName:'theAnswer') get.
+%  (thisContext slotAtName:'theAnswer') set:42.
+%\end{lstlisting}
+%\end{figure}
 
-Whereas using this type of direct access with non-local objects is considered at least
-questionable style in languages that support it, such as Java or C++, it is simply prohibited in Smalltalk.
-The reason is that syntactically direct access is conflated with machine-level direct
-access:  the implementation is a straight memory reference, without any possibility
-of providing alternative storage strategies or intervening programmatically.
 
-Languages with pointers such as C++ and Objective-C can provide a reference to a variable
-by taking the address using the {\tt \&} operator ({\tt \&theAnswer}).   However, this is once
-again a direct memory reference without any encapsulation or options of providing 
-alternate implementations in the future.  Smalltalk once again prohibits such access.
+
+%Whereas using this type of direct access with non-local objects is considered at least
+%questionable style in languages that support it, such as Java or C++, it is simply prohibited in Smalltalk.
+%The reason is that syntactically direct access is conflated with machine-level direct
+%access:  the implementation is a straight memory reference, without any possibility
+%of providing alternative storage strategies or intervening programmatically.
+
+%Languages with pointers such as C++ and Objective-C can provide a reference to a variable
+%by taking the address using the {\tt \&} operator ({\tt \&theAnswer}).   However, this is once
+%again a direct memory reference without any encapsulation or options of providing 
+%alternate implementations in the future.  Smalltalk once again prohibits such access.
 
 \subsection{Messages as identifiers}
 
@@ -250,7 +280,7 @@ obtaining or setting {\tt theAnswer} by interacting with the {\tt deepThought}\c
 as shown in listing~\ref{message-access}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=message-access,caption=Asking an object.]
+\begin{lstlisting}[style=L,label=message-access,caption=Retrieve and store value via message sends.]
   deepThought getTheAnswer.
   deepThought setTheAnswer:42.
 \end{lstlisting}
@@ -277,10 +307,8 @@ message sends is also reported to be around 5\% \cite{Holzle:1991:ODO:646149.679
 \begin{lstlisting}[style=L,label=trivial-accessors,caption=Trivial accessors.]
 getTheAnswer
     ^theAnswer.
-
 setTheAnswer:newAnswer
     theAnswer := newAnswer.
-
 \end{lstlisting}
 \end{figure}
 
@@ -485,14 +513,13 @@ they lose in convenience and expressiveness:   since reified identifiers have no
 syntax that is equivalent to a name, they must first be initialized with a name, typically
 a string, as shown in listing~\ref{reified-identifiers}, then the URL must be loaded and
 finally the data retrieved converted into an object, which can then be used, for example
-for drawing.  For local variables, the code 
-would resemble the counter-example given in listing~\ref{reified-variable-lookup}.
+for drawing. 
+% For local variables, the code would resemble the counter-example given in listing~\ref{reified-variable-lookup}.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Drawing an image stored on flickr.]
-answerURL := NSURL URLWithString:
-	'http://www.depthought.com/theAnswer'.
+\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Retrieving image data stored on flickr.com.]
+answerURL := NSURL URLWithString:'http://www.depthought.com/theAnswer'.
 NSData dataWithContentsOfURL:answerURL.
 \end{lstlisting}
 \end{figure}
@@ -516,12 +543,10 @@ whereas drawing the same image with the same ID stored within the application's 
 is shown in listing~\ref{flickr-local-draw}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=nsurl-flickr-draw,caption=Retrieving and drawing a remote image.]
-flickrURL :=NSURL URLWithString:
-	'http://static.flickr.com/2438/'.
-imageURL := NSURL 
-         URLWithString:'3559417932_7208103ed8_m.jpg' 
-         relativeToURL:flickrBase.
+\begin{lstlisting}[style=numbers,label=nsurl-flickr-draw,caption=Retrieving and drawing an image stored on flickr.com.]
+flickrURL :=NSURL URLWithString:'http://static.flickr.com/2438/'.
+imageURL := NSURL URLWithString:'3559417932_7208103ed8_m.jpg' 
+                  relativeToURL:flickrBase.
 imageData := NSData dataWithContentsOfURL:imageURL.
 image := UIImage imageWithData:imageData.
 context drawImage: image.
@@ -534,8 +559,7 @@ incompatible with other types of resource access.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=flickr-local-draw,caption=Retrieving and drawing a local image.]
-context drawImage: (UIImage imageWithName:
-	'3559417932_7208103ed8_m').
+context drawImage: (UIImage imageWithName: '3559417932_7208103ed8_m').
 \end{lstlisting}
 \end{figure}
 
@@ -573,7 +597,7 @@ generalize direct references,  just like messaging generalized function calls an
 Polymorphic Identifiers combine the techniques for resource access discussed in the previous 
 section by:
 \begin{enumerate}
-\item extending the syntax for identifiers to that of Universal Resource Identifiers (URIs)\cite{rfc3986},
+\item extending the syntax for identifiers to that of URIs,
 \item reifying the identifier lookup process and
 \item making it user-extensible with open-implementation techniques.
 \end{enumerate}
@@ -893,7 +917,7 @@ raw http access with two caches, a file cache and an in-memory cache.
 
 \begin{figure}[htbp]
 \begin{center}
-\includegraphics[scale=0.5,page=1]{cached-http.pdf}
+\includegraphics[scale=0.4,page=1]{cached-http.pdf}
 \caption{Typical http scheme handler with caching, composed from simpler schemes}
 \label{fig:http-cached}
 \end{center}
@@ -921,8 +945,7 @@ website.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
-  base := ref:http://datatracker.ietf.org/doc/.
-  scheme:rfc := RelativeScheme schemeWithBase:base.
+scheme:rfc:=RelativeScheme schemeWithBase: ref:http://datatracker.ietf.org/doc
 \end{lstlisting}
 \end{figure}
 
@@ -933,15 +956,15 @@ substituting a different server, a directory in a local filesystem or even an
 in-memory store.
 
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
-scheme:rfc:=ref:http://datatracker.ietf.org/doc/ asScheme.
-\end{lstlisting}
-\end{figure}
+%\begin{figure}[htbp]
+%\begin{lstlisting}[style=L,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
+%scheme:rfc:=ref:http://datatracker.ietf.org/doc/ asScheme.
+%\end{lstlisting}
+%\end{figure}
 
-Since relative schemes are very common and usually based on a reference, the
-{\tt asScheme} convenience operation on references creates a relative scheme, as shown
-for the {\tt rfc:} scheme in listing~\ref{rfc-scheme-convenience}.
+%Since relative schemes are very common and usually based on a reference, the
+%{\tt asScheme} convenience operation on references creates a relative scheme, as shown
+%for the {\tt rfc:} scheme in listing~\ref{rfc-scheme-convenience}.
 
 A filter scheme that modifies data while leaving URL alone is the \emph{MIME-Type mapper}.
 The mapper is parametrized with routines that create objects from data with specific
@@ -1031,8 +1054,7 @@ in listing~\ref{image-drawing}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=image-drawing,caption=Drawing a remote image via {\tt http:}.]
-context drawImage: 
-  http://static.flickr.com/2438/3559417932_7208103ed8_m.jpg
+context drawImage:http://static.flickr.com/2438/3559417932_7208103ed8_m.jpg
 \end{lstlisting}
 \end{figure}
 
@@ -1104,16 +1126,8 @@ with a direct reference, only having to prefix a {\tt ref:} at the beginning:  {
 \subsection{Common behavior}
 \label{common-reference-behavior}
 Apart from retrieving and storing values, references are also used to query manipulate
-metadata, for example wether a reference is bound to a value, which can mean that
-a file or an environment variable exists (see listing~\ref{isBound}).
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=isBound,caption=Is environment variable set?]
-ref:env:bozo isBound  // false
-env:bozo := 'hi'
-ref:env:bozo isBound  // true
-\end{lstlisting}
-\end{figure}
+metadata.  For example {\tt ref:env:bozo isBound} returns {\tt true} if the environment
+variable {\tt bozo} exists and {\tt false} if it does not.
 
 References also support a generic API for tree-based structures.   Apart from being used
 by the runtime to support path-based access, these APIs are also used to export arbitrary
@@ -1138,26 +1152,14 @@ server start:nil.
 
 References are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
-meta-data about and perform operations on the file as shown in Listing~\ref{ref-file-dir}.
+meta-data about and perform operations such as querying wether a file is a directory, with
+{\tt ref:file:/tmp/ isDirectory}.
 
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=symbolic-link,caption=Creating a symbolic link to {\tt /tmp}]
-file:/linkToTemp/ := ref:file:/tmp
-\end{lstlisting}
-\end{figure}
 
 Having the concept of references also regularizes some special-purpose APIs.  For example,
 we can copy a file using the code {\tt file:a := file:b}.  If a {\tt ref:file:} is a reference to a file, what
 happens when we write this reference to a file?  A symbolic link is created\footnote{A hard link
 would be a reference to the inode, which isn't exposed by the kernel}.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=ref-file-dir,caption=Is {\tt /tmp} a directory?]
-ref:file:/tmp/ isDirectory  //  true, on Unix
-\end{lstlisting}
-\end{figure}
 
 References for remote resources include methods for initiating a transfer,
 error-checking and progress monitoring.  
@@ -1167,7 +1169,9 @@ error-checking and progress monitoring.
 References also mediate message sends.   Messages are not sent directly to their objects, but via a
 \emph{Higher Order Message}\cite{HOM}, in this case {\tt send}, to the receiver.    Higher Order Messages
 are messages that take other messages as their argument, so the argument of the {\tt send} HOM is the
-message that is to be sent to the value of the reference.   Line 1 of listing~\ref{message-via-ref} shows
+message that is to be sent to the value of the reference.  
+
+  Line 1 of listing~\ref{message-via-ref} shows
 what happens when sending the {\tt setTheAnswer:} message to the {\tt deepThought} object with
 the argument {\tt 42}.
 
@@ -1195,8 +1199,7 @@ in this case {\tt ?doi=10.1.1.41.7628}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=url-args,caption=URL arguments via reference and higher order message.]
-  host := 'citeseerx.ist.psu.edu'.
-  viewCiteSeer:=ref:http://{host}/viewdoc/summary.
+  viewCiteSeer:=ref:http://citeseerx.ist.psu.edu/viewdoc/summary.
   (viewCiteSeer withArgs doi:'10.1.1.41.7628') value
 \end{lstlisting}
 \end{figure}
@@ -1213,7 +1216,7 @@ at the reference, so the left hand side is at a different meta-level than the ri
 With first class references, evaluation is always via the reference, so assignment is just a plain, though unsugared
 message send that has references as both its receiver and argument.  The references then interact to resolve
 the assignment, and can implement special behavior such as creating a symbolic link for a file-references assigned
-to a file (see figure~\ref{symbolic-link}).
+to a file.
 
 With assignment being a complex operation, we must now deal with the possibility of failure.  Assignments 
 return a result that indicates status.  This status can also report progress for assignments that are
@@ -1390,9 +1393,8 @@ have shown) without becoming more obscure.
 \subsection{Performance}
 
 As should be expected, having the compiler help with lookups can give a tremendous
-boost to lookup operations compared to evaluating strings at runtime.  Table~\ref{var-speed}
-and figure~\ref{var-speed-graph} 
-compare evaluating the identifier {\tt var:stream/target/target} with using the Objective-C 
+boost to lookup operations compared to evaluating strings at runtime.  Figure~\ref{var-speed} 
+compares evaluating the identifier {\tt var:stream/target/target} with using the Objective-C 
 Key Value Coding equivalent {\tt [stream valueForKeyPath:@"target.target"]}.
 
 We use the underlying Objective-C implementation for both the reference and its 
@@ -1400,8 +1402,10 @@ comparison because Objective-Smalltalk is currently an interpreted environment w
 a simple AST-walker, so interpretation overhead makes performance differences in
 the underlying lookup disappear.
 
-\begin{table}
-\begin{center}
+
+\begin{figure}
+  \centering
+\begin{minipage}[c]{0.38\textwidth}
 \begin{tabular}{|r|r|r|r|r|r|r|r|r|r|r|r|} \hline
 Accesses  & KVC& {\tt var:}   & ratio	\\ 
  & ($\mu$s) & ($\mu$s) & \\ \hline
@@ -1412,16 +1416,12 @@ Accesses  & KVC& {\tt var:}   & ratio	\\
 10000 & 8345 & 186 &   44.9 \\   % \hline
 100000 & 73036 & 1730 &    42.2 \\ \hline
 \end{tabular}
-\caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access}
-\label{var-speed}
-\end{center}
-\end{table}
-
-
-\begin{figure}
+\end{minipage}
+\begin{minipage}[c]{0.38\textwidth}
 \includegraphics[scale=0.5,page=2]{kvc-vs-var.pdf}
+\end{minipage}
 \caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access, log scale}
-\label{var-speed-graph}
+\label{var-speed}
 \end{figure}
 
 For large number of operations, access via the {\tt var:} scheme (or more precisely its references) is
@@ -1432,26 +1432,24 @@ Another serendipitous discovery we briefly mentioned in section~\ref{common-refe
 the fact that schemes could be used not only within a program, but also bridged, for example to be used
 as web-servers using an http-adapter, for example the file-server shown in figure~\ref{fileserver}.
 
-Table~\ref{http-server-speed} shows the performance, in requests/s of several different kinds of (composed)
+Figure~\ref{http-server-speed} shows the performance, in requests/s of several different kinds of (composed)
 schemes, with the apache web server as comparison.  
 
-\begin{table}
-\begin{tabular}{|l|c|c|r|r|r|r|r|r|r|r|r|} \hline
+\begin{figure}
+\begin{minipage}[c]{0.58\textwidth}
+\begin{tabular}{|l|c|c|} \hline
 Server   &  Requests/s    \\ \hline
 apache & 	14876	      \\ % \hline
 home-scheme (file+relative) &  19231   \\ % \hline
 home-scheme (+cached)  &  23398  \\ % \hline
 memory-scheme (only) &  31491  \\ \hline
-
 \end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.58\textwidth}
+\includegraphics[scale=0.38,page=2]{server-perf.pdf}
+\end{minipage}
 \caption{Performance of different schemes bridged to http vs. apache}
 \label{http-server-speed}
-\end{table}
-
-\begin{figure}
-\includegraphics[scale=0.5,page=2]{server-perf.pdf}
-\caption{Performance of different schemes bridged to http vs. apache}
-\label{http-server-speed-graph}
 \end{figure}
 
 
@@ -1550,7 +1548,7 @@ actually converting it to XML first.
 
 The E language\cite{MillerRobustComposition}  supports URI-Expressions as a
 direct language feature.  Example include access to files
-using file URI  {\bf <file:c:/jabbertest>} or Web-resources using HTTP {\bf <http://www.erights.org>}.  However,
+using file URI  {\bf $\langle$file:c:/jabbertest$\rangle$} or Web-resources using HTTP {\bf  $\langle$http://www.erights.org$\rangle$}.  However,
 E only supports using these URI expressions in the reference-aware style and does not integrate 
 ordinary identifiers into the URI mechanism, provide abstraction facilities 
 for URIs or an extension mechanism. 
@@ -1687,5 +1685,6 @@ programming beyond network and Web-environments.
 % The bibliography should be embedded for final submission.
 \bibliography{polymorphic-identifiers}
 
-\balancecolumns
+%\balancecolumns
+
 \end{document}
