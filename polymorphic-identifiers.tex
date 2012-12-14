@@ -10,7 +10,13 @@
 
 \usepackage{ifthen}
 \usepackage{pifont}
+%\usepackage[small,compact]{titlesec}
 
+\usepackage{mathptmx}
+
+\usepackage{paralist}
+
+\usepackage[small,it]{caption}
 
 \usepackage[pdftex]{graphicx}
 \usepackage{fancyhdr}
@@ -55,6 +61,13 @@
 \pagestyle{fancy} 
 \sloppy
 
+%\setlength{\parskip}{0pt}
+%\setlength{\parsep}{0pt}
+%\setlength{\headsep}{2pt}
+%\setlength{\topskip}{0.1pt}
+%\setlength{\topmargin}{1pt}
+%\setlength{\topsep}{1pt}
+%\setlength{\partopsep}{0pt}
 
 \newboolean{showcomments}
 \setboolean{showcomments}{true}
@@ -87,6 +100,9 @@
 
 
 \begin{document}
+\fontsize{9.8}{12}\rm
+
+\linespread{0.9}
 
 %\conferenceinfo{WXYZ '05}{date, City.} 
 %\copyrightyear{2011} 
@@ -239,46 +255,19 @@ theAnswer := 42.
 \end{lstlisting}
 \end{figure}
 
-Plain identifiers are bound early and resolved directly.
+Plain identifiers are bound early and resolved directly.  
 Developers cannot extend them to refer to
-new types of objects such as files or define new access mechanisms.  Whereas some languages
+new types of objects such as files or define new access mechanisms.  Dave Robson, one of the authors
+of the Blue Book defining Smalltalk \cite{Goldberg1983} is reported by Ungar and Smith in \cite{Ungar:2007:SEL:1238844.1238853} to have said: ``Yeah, once youÕre inside an object, itÕs pretty much like Pascal.''
+
+
+  Whereas some languages
 such as C and C++ allow references using the {\em pointer-of} operator {\tt \&} and pointer
 dereference {\tt *}, such indirect references are not available in Smalltalk.
 
-%Due to the fact that the programmer does not, and cannot, deal with either the identifier
-%or the reference, but names the value using the identifier, we call this an \emph{identifier oblivious}
-%access.  This type of direct access is only possible for a few specific variable types
-%(local, instance, class, pool and global) and supported directly by the compiler.
-
-%If it were possible to make the lookup explicit, what we call \emph{identifier aware},
-%the code would look something like Listing~\ref{reified-variable-lookup}.  Apart
-%from the infinite recursion ({\tt thisContext}  also needs to be looked up),
-%forcing this style would be prohibitive from both effort/readability and performance
-%perspectives.
-
-
-%\begin{figure}[htbp]
-%\begin{lstlisting}[style=L,label=reified-variable-lookup,caption=Reified local resource access.]
-%  (thisContext slotAtName:'theAnswer') get.
-%  (thisContext slotAtName:'theAnswer') set:42.
-%\end{lstlisting}
-%\end{figure}
-
-
-
-%Whereas using this type of direct access with non-local objects is considered at least
-%questionable style in languages that support it, such as Java or C++, it is simply prohibited in Smalltalk.
-%The reason is that syntactically direct access is conflated with machine-level direct
-%access:  the implementation is a straight memory reference, without any possibility
-%of providing alternative storage strategies or intervening programmatically.
-
-%Languages with pointers such as C++ and Objective-C can provide a reference to a variable
-%by taking the address using the {\tt \&} operator ({\tt \&theAnswer}).   However, this is once
-%again a direct memory reference without any encapsulation or options of providing 
-%alternate implementations in the future.  Smalltalk once again prohibits such access.
 
 \subsection{Messages as identifiers}
-
+\label{messages-as-identifiers}
 Encapsulation and the potential for polymorphic behavior can be achieved by sending 
 messages to objects in order to get and set the value in question, for example the
 {\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.
@@ -416,7 +405,7 @@ be reused.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[scale=0.51,page=1]{ui-widget-generic-access-string.pdf}
+\includegraphics[scale=0.4,page=1]{ui-widget-generic-access-string.pdf}
 \caption{Widget using string identifiers for parametrized access}
 \label{ui-widget-string-access}
 
@@ -426,12 +415,9 @@ Finally, evaluating string identifiers at run-time also imposes overhead.
 
 \subsection{Reified identifiers}
 
-
-Unlike strings, reified references can be semantically rich and self-contained, 
+Unlike strings, reified identifiers can be semantically rich and self-contained, 
 allowing variations without requiring a separate evaluator.
 Unlike messages they can encapsulate both read and write access in one entity.  
-
-
 
 Figure~\ref{ui-widget-valueholder} shows how a \emph{ValueHolder}~\cite{Woolf:1995:UUV:218662.218699} object,
 specifically an {\em AspectAdaptor} that
@@ -443,7 +429,7 @@ strategies can be substituted without having to modify client code.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[scale=0.51,page=1]{ui-widget-valueholder.pdf}
+\includegraphics[scale=0.4,page=1]{ui-widget-valueholder.pdf}
 \caption{Widget using ValueHolder for parametrized access}
 \label{ui-widget-valueholder}
 
@@ -896,11 +882,6 @@ Both variants are shown in Figure~\ref{http-cached-converted}.
 \label{http-cached-converted}
 \end{figure}
 
-When caching items in memory, it might make more sense to cache the domain objects
-rather than the raw bytes, so changing the order into 
-and resulting in Figure~\ref{http-converted-cached}.
-
-
 
 With the MIME-mapper in place in the revamped http-scheme, we can now 
 write the flickr.com example from Listing~\ref{nsurl-flickr-draw} inline as {\tt context drawImage:http:///....jpg},
@@ -1083,24 +1064,12 @@ the return value used as part of the access path.
 The example from Listing~\ref{rfcs-directory}, taking four lines of code to retrieve a specific RFC from a 
 the {\tt rfcs} directory in the user's home directory can be expressed as the simple expression
 {\tt file:\{env:HOME\}/rfcs/\{rfcName\}} using parametrized polymorphic identifiers.  It is almost
-as concise as the Unix shell equivalent: {\tt \$HOME/rfcs/\$rfcName}.
-
-Different abstraction mechanisms can be combined, for example using a
-relative scheme with a parametrized identifier, yielding
-a scheme that represents files in the current user's home directory, shown
-in Listing~\ref{home-scheme}.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=home-scheme,caption={\tt home:} scheme and {\tt rfc:} scheme.]
-  scheme:home := ref:file:{env:HOME} asScheme.
-  scheme:rfc := ref:home/rfcs
-\end{lstlisting}
-\end{figure}
+as concise as the Unix shell equivalent: {\tt \$HOME/rfcs/\$rfcName}, and can itself be packaged
+in a file-based {\tt rfc:} scheme. 
 
 This {\tt rfc:} scheme for a local directory can easily be extended with a sequential lookup scheme
 and the {\tt rfc:} scheme from Section~\ref{filterschemes} to provide a multi-level lookup mechanism
-for RFCs.
+for RFCs like the one described in 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
@@ -1202,18 +1171,34 @@ scheme-handlers proved serendipitous.  Subjectively, programming with Polymorphi
 Identifiers seems natural and code appears to gain conciseness (as the examples
 have shown) while more clearly expressing intent.
 
+\subsection{Abstraction and Encapsulation}
+
+The ability to define application specific storage namespaces via schemes such as {\tt rfc:} or {\tt flickr:}
+allows developers to abstract from the particular storage mechanism used, and the syntactic
+and semantic compatibility of scheme-handlers allows clients to flexibly choose specific storage
+mechanisms and vary them at a later time, code is not bound to a particular storage mechanism.
+
+Integrating this flexible storage mechanism with the language reduces boilerplate and hiding
+the lookup methods eliminates the chances for interoperability-inhibiting naming differences in those lookup methods.
+
+
 
 \subsection{Performance}
 
-As should be expected, having the compiler help with lookups can give a tremendous
-boost to lookup operations compared to evaluating strings at runtime.  Figure~\ref{var-speed} 
-compares evaluating the identifier {\tt var:stream/target/target} with using the  
-KVC equivalent in Objective-C  {\tt [stream valueForKeyPath:@"target.target"]}.
+Like plain identifiers and messages, Polymorphic Identifiers benefit from having the compiler perform
+at least the character to reference conversion step of identifier lookup, yielding performance 
+improvements over string-based identifiers.
+
+Figure~\ref{var-speed} compares evaluating the identifier {\tt var:stream/target/target} with evaluating the  
+equivalent string-based identifier (using Cocoa KVC): {\tt [stream valueForKeyPath:@"target.target"]}.
 
 We use the underlying Objective-C implementation for both the reference and its 
 comparison because Objective-Smalltalk is currently an interpreted environment with
 a simple AST-walker, so interpretation overhead makes performance differences in
-the underlying lookup disappear.
+the underlying lookup disappear.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor, the
+code was self-timing using the {\tt getrusage()} call.  
+
+\mpw{need more details here}
 
 
 \begin{figure}
@@ -1237,16 +1222,20 @@ Accesses  & KVC& {\tt var:}   & ratio	\\
 \label{var-speed}
 \end{figure}
 
-For large number of operations, access via the {\tt var:} scheme (or more precisely its references) is
-around 40 times faster than using Key Value Coding.  This result isn't surprising, since we
-moved the string lookup out of the inner loop that performs the access.
+For large number of operations, access via the {\tt var:} scheme (or more precisely its reference) is
+around 40 times faster than using Key Value Coding, confirming our expectations about the benefits
+of partial compile-time evaluation versus string-interpretation at run-time.  
 
-Another serendipitous discovery we briefly mentioned in Section~\ref{common-reference-behavior} was
-the fact that schemes could be used not only within a program, but also bridged, for example to be used
-as web-servers using an http-adapter, for example the file-server shown in Figure~\ref{fileserver}.
+In order to test the overhead of scheme-handlers, especially composite scheme-handlers, we turn
+to the ability to bridge scheme-handlers to servers briefly mentioned in Section~\ref{common-reference-behavior}.
+We exported three different schemes via http and then used the {\tt wrk} http-performance testing tool to stress
+test the resulting http servers, using apache as a benchmark to validate our results.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor.
 
-Figure~\ref{http-server-speed} shows the performance, in requests/s of several different kinds of (composed)
-schemes, with the apache web server as comparison.  
+Figure~\ref{http-server-speed} shows the results.  Serving a specific directory using a relative scheme parametrized
+with the file scheme resulted in a performance level of around 19K requests per second.  Adding the same memory cache
+we used for the caching http client scheme improves performance to 23K requests per second and finally exporting a pure
+memory scheme yields the best performance at 31K requests per second.   Apache has many more features and so
+has slightly lower performance.
 
 \begin{figure}
 \begin{minipage}[c]{0.58\textwidth}
@@ -1273,33 +1262,73 @@ memory-scheme (only) &  31491  \\ \hline
 \section{Related Work}
 \label{related-work}
 
-\subsection{Messaging}
 
-Based on the proposal in~\cite{Spinellis:2002:MPC:510857.510868}, properties in C\# and Objective-C 2.0
- add special syntax for access to object attributes 
-that is similar to plain identifier access, but backed by message sends, as well as automatic
-generation of the required trivial accessors.  
+We already saw in Section~\ref{messages-as-identifiers} that messaging can be used for resource
+access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{newspeak} take this
+approach to its logical conclusion by making all identifiers message-sends and therefore late-bound, eliminating
+all nouns and replacing them with verbs\footnote{Literals are the exception}.  Although
+this elimination of variables as a simplification is conceptually elegant, it leads to practical problems of scattering and tangling of code we
+mentioned, and  ``left a complexity that bothers us to this day''~\cite{Ungar:2007:SEL:1238844.1238853}.
+Handling the assignment part of resource access leads to ad-hoc rules and mechanisms to tie together
+the slot accessor methods that Ungar and Smith say ``troubled us a bit''~\cite{Ungar:2007:SEL:1238844.1238853}.
 
-Self~\cite{UngarS87} and Newspeak~\cite{newspeak} go further in making identifiers polymorphic by 
-completely eliminating identifiers that are not message-sends.  They change the syntax to allow
-implicit receivers, alter the message lookup rules to start message lookup with the
-current context, and add automatic generation of accessor methods.  
+Polymorphic Identifiers are a result of the same basic premise that identifiers should always be late-bound.  However,
+it doesn't follow the apparent implicit assumption that only messaging can be late-bound and therefore identifiers must
+be messages in order to be late-bound, and the related assumption that interfaces must be message-based.
 
-None of these approaches solves the problems of tangling the identifier with access methods and 
-scattering access methods throughout the code-base.  
+This assumption certainly doesn't apply to the World Wide Web and the REST architectural style~\cite{fielding-rest}, where
+it is (universal) resource identifiers that are the interfaces, and messaging is the hidden implementation detail.  This 
+approach is taken to its logical extreme by  by Resource Oriented Computing \cite{roc},
+which encodes all computation into identifiers, with an {\tt action:} scheme that is ``a functional programming language encoded as a URI''.
+
+Although scheme-handlers can be exported via http, Polymorphic Identifiers leave the decision of wether to present a messaging
+or a resource-based interface to the developers,
+similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\cite{Kochan:2009:PO:1538451}, which closely match the proposal in \cite{Spinellis:2002:MPC:510857.510868}.  Properties are syntactic sugar for a pair of accessor methods and allow clients to use 
+ plain identifiers syntax to access values via message-sends, including assignment for setting the value.   However, properties
+ are just syntactic sugar for one type of resource access, they are not user-extensible like Polymorphic Identifiers 
+ and don't integrate access to external resources or first class references.
+
+
+The E language\cite{MillerRobustComposition}  supports URI-Expressions as a direct language feature using angle brackets for access to 
+resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
+E even allows custom schemes to be defined, but for only for read-access, separate from other identifiers and without the ability to extract references.
+
+The Icon programming language \cite{IconRef} has references as first class values, but these are not extensible and have complex,
+built-in rules for wether they are evaluated or treated as references, rather than having explicit control as with Polymorphic Identifiers.
+
+A different approach to resource access comes from the operating system community:  Plan9\cite{plan9names}\cite{plan9network} 
+integrates a wide variety of local and remote resources and services into a single directory tree that is made available on a per-process basis.
+User level filesystems like FUSE\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
+system bring some of these ideas to commercial operating systems, but must have access mediated via the kernel and visible to all
+processes on a machines. 
+
+   Polymorphic Identifiers also allow different local and remote resource handlers to be combined via
+scheme-handlers, but don't require communication to be string based or mediated by the operating system kernel, although scheme-handlers
+can be exported as filesystems using FUSE if desired.  In addition
+Polymorphic Identifiers integrate such resource access with a general purpose programming language without the need for  
+string-based identifiers and I/O system calls, rather than requiring domain-specific languages such as Unix shells for direct access.
+
+\emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
+in that they allow domain-specific language elements to be added to a language, rather
+than having to create a completely new language with an external DSL or attempt to 
+achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
+
+Like polymorphic embedding of DSLs \cite{polydsl}, \emph{Polymorphic Identifiers} allow
+a single syntax to be used with multiple, pluggable semantic interpretations permitting
+composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Identifiers}
+are applicable to general purpose programming languages, not just DSLs, while
+at the same time restricting their focus to the identifiers used.
 
 
 
-ThingLab\cite{thinglab}  adds path-based access to the base Smalltalk language in order to support
-constraints referencing parts of objects, say the vertex of a triangle, and these
-references do exist as first class objects that can be passed to other objects.
-   It does not
-expand this path-based access to other domains or make it user-extensible.
 
 
-\subsection{Proxies and mirrors}
+Smalltalk reflective facilities \cite{reflective-st} can be used to build custom messaging facilities similar to the
+way messaging is handled by sending HOMs to references in Polymorphic Identifiers, and in fact, HOM
+can be implemented using those reflective facilities.  
 
-Smalltalk reflective facilities \cite{reflective-st} have long been used to build
+
+ have long been used to build
 features such as distributed object systems, futures, lazy evaluation, and
 transparent storage mechanisms.  One problem with the Smalltalk facilities
 has been that they are defined in an ad-hoc fashion from error handling routines
@@ -1316,92 +1345,6 @@ The proposed ECMAScript Proxy mechanism \cite{VanCutsemMiller} addresses
 the stratification issues and also integrates some identifier access into the 
 metaprogramming framework, but doesn't allow user-extensible identifiers.
 
-We believe that mechanisms such as remote objects, futures, proxies and the like
-are actually properly modeled not at the object level, but at the identifier/reference
-level, so that a significant part of what is currently considered metaprogramming
-can be considered programming at the identifier level.
-
-\subsection{References in Icon}
-
-In the Icon programming language \cite{IconRef} , identifiers (references) can be first class values,
-and there are complex rules for when a reference remains a reference and when
-it's value is used.  However, the rules are implicit and there is no way for the 
-developer to choose when to be identifier-aware or identifier-oblivious.  Furthermore,
-there is no way for the user to extend the language with new types of references 
-or behaviors.
-
-
-\subsection{Direct reference to external resources}
-
-
-The E language\cite{MillerRobustComposition}  supports URI-Expressions as a
-direct language feature.  Example include access to files
-using file URI  {\bf $\langle$file:c:/jabbertest$\rangle$} or Web-resources using HTTP {\bf  $\langle$http://www.erights.org$\rangle$}.  However,
-E only supports using these URI expressions in the reference-aware style and does not integrate 
-ordinary identifiers into the URI mechanism, provide abstraction facilities 
-for URIs or an extension mechanism. 
-
-The Wheat language \cite{wheat} embedded an entire programming language
-and system into a Web-server, accessing all resources and methods via
-HTTP URLs.  \emph{Polymorphic Identifiers} allow resources, but these resources
-are not required to use a specific communications mechanism.
-
-
-Resource Oriented Computing \cite{roc} goes even further by
-requiring all computation to be expressed through URIs, adding Active URIs
-for computation, for example {\tt   active:{base}+{name}@{uri}...}
-
-The {\bf base} is a function name, the {\bf name} an argument name and the
-{\bf uri} an argument URI.
- While \emph{Polymorphic Identifiers} allow processing to be
-hidden behind a resource URI, they also allow messaging to be expressed
-as messaging when that is the intent.
-
-
-
-\subsection{Unified path-based access mechanisms}
-
-
-User level filesystems like FUSE\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
-system allow
-user-level code to add new filesystems to the Unix kernel, without requiring
-kernel modifications or impacting operating system kernel stability.
-
-This approach allows many sorts of local and remote data-types to be 
-treated as files in a filesystem and made available to the wide variety
-of Unix tools that can navigate and process such files.  
-
-However, this support requires global installation of handlers in the operating
-system, which also must mediate access, making integration of in-memory 
-variables difficult at best.  The identifiers used to access these resources
-are also still strings that are not integrated with the identifier mechanism of
-the host language, with all the problems discussed in Section~\ref{string-identifiers}.
-
-Using FUSE/puffs filesystems as scheme resolvers without kernel intervention seems
-like a useful addition, as is making scheme-resolvers available to the Unix kernel
-via FUSE/puffs.
-
-The Plan9\cite{plan9names}\cite{plan9network} operating system from Bell Labs goes further than FUSE in integrating
-all data, local and network resources into a single hierarchical namespace.  Similar
-caveats as for FUSE apply.
-
-Virtual XML\cite{Rose:2006:VXT:1150706.1150719} unifies access to data by treating all data as
-XML trees, allowing queries against this XML representation of the data without
-actually converting it to XML first.  
-
-
-\subsection{Domain specific languages}
-
-\emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
-in that they allow domain-specific language elements to be added to a language, rather
-than having to create a completely new language with an external DSL or attempt to 
-achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
-
-Like polymorphic embedding of DSLs \cite{polydsl}, \emph{Polymorphic Identifiers} allow
-a single syntax to be used with multiple, pluggable semantic interpretations permitting
-composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Identifiers}
-are applicable to general purpose programming languages, not just DSLs, while
-at the same time restricting their focus to the identifiers used.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -1443,9 +1386,10 @@ programming beyond network and Web-environments.
 \break
 
 \bibliographystyle{abbrv}
+\bibliography{polymorphic-identifiers}
+
 
 % The bibliography should be embedded for final submission.
-\bibliography{polymorphic-identifiers}
 
 %\balancecolumns
 
