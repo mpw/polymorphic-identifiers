@@ -59,7 +59,7 @@
 %%--- end of listings configuration
 
 \pagestyle{fancy} 
-\sloppy
+% \sloppy
 
 %\setlength{\parskip}{0pt}
 %\setlength{\parsep}{0pt}
@@ -366,6 +366,8 @@ access ({\tt objectForKey:} and {\tt setObject:forKey:}) that is different from 
 The same differences apply to Smalltalk collections and objects which use {\tt at:} and {\tt at:put:} vs. {\tt instVarNamed:} and {\tt instVarNamed:put:}
 respectively.
 
+\sloppy		%  FIXME
+
 File system access uses yet another set of messages, coupling code that wishes to use the filesystem tightly to the filesystem,
 rather than having interchangeable resource providers.  Whereas raw bytes can be read from disk using
 {\tt NSData dataWithContentsOfFile:'theAnswer.txt'} and strings using 
@@ -373,6 +375,7 @@ rather than having interchangeable resource providers.  Whereas raw bytes can be
 for loading an image from the file-system for drawing on a graphics context, the first directly from a filesystem path,
 the second using a specialized method for obtaining named images from the application's resources.
 
+\fussy
 
 %'42' writeToFile:'theAnswer.txt' atomically:YES.
 
@@ -592,6 +595,7 @@ Each scheme is backed by a \emph{scheme-handler}.  Scheme-handlers broadly fall 
 directly encapsulate access to some sort of resource, while \emph{composite schemes} (section~\ref{compositeSchemes})
 can be used to build new schemes out of existing schemes, forming a scheme algebra.
 
+\sloppy   % FIXME
 
 Scheme-handlers are represented by normal objects that respond to a well-defined protocol 
 accessible by user level code.  They
@@ -600,6 +604,8 @@ all \emph{Polymorphic Identifiers} with that scheme will be resolved using that 
 The {\tt scheme:} scheme manages the mapping of scheme-names to scheme-handlers, so the code 
 {\tt scheme:http := URLSchemeResolver scheme} binds an instance of the {\tt URLSchemeResolver} class
 to the {\tt http:} scheme.
+
+\fussy
 
  Any scheme-handler
 can be used for any scheme-name, as long as it implements the handler protocol
@@ -679,16 +685,20 @@ the command {\tt stcat \~\//.bashrc} will display the user's bash startup script
 bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
 your home directory.
 
+
 With a current Unix shell all three of these resource types would have required a different
-command or access syntax:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
+access syntax:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
 web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
 variable, as would using Objective-Smalltalk without Polymorphic Identifiers .
 
+
+
 The {\tt scurl} command in Listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
 it needs to manipulate the identifier.  The {\tt scurl} command
-is the {\tt stsh} variant of the {\tt curl -O} command for downloading files from the web, typing
-{\tt scurl http://http://datatracker.ietf.org/doc/rfc1738} will download the specified web resource
+is the {\tt stsh} variant of the {\tt curl -O} command for downloading files from the web, giving 
+{\tt scurl} the argument {\tt http://http://datatracker.ietf.org/doc/rfc1738} will download the specified web resource
 to the current directory as the file {\tt rfc1738}.
+
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=scurl,caption={\tt scurl} downloads files.]
@@ -956,7 +966,7 @@ server start:nil.
 
 References are scheme-specific and can include additional API specific to that type of scheme.
 For example, file bindings are analogues of the Java {\bf File} object and can deliver
-meta-data about and perform operations such as querying wether a file is a directory, with
+meta-data about and perform operations such as querying whether a file is a directory, with
 {\tt ref:file:/tmp/ isDirectory}.
 
 
@@ -989,7 +999,7 @@ deepThought setTheAnswer:newAnswer
 As with obtaining values from references, line 1 is consistent but would be too inconvenient for day to day use,
 so line 2 shows the syntactic sugar version that is converted by the compiler to what's in line 1.  The {\tt send}
 HOM implements the simple synchronous message send that is default Smalltalk semantics.   Arguments
-are passed as references to the HOM, which can then decide wether to evaluate them.  The default {\tt send}
+are passed as references to the HOM, which can then decide whether to evaluate them.  The default {\tt send}
 HOM evaluates all references to implement \emph{pass by value} semantics.
 
 References can and do implement other message passing semantics, such as asynchronous sends, future
@@ -1082,7 +1092,9 @@ a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-ap
 in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby} in that Objective-Smalltalk classes,
 objects and messages are essentially indistinguishable from their Objective-C counterparts.
 
-Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to handler URIs as 
+Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to allow URIs as identifiers
+and allowing scheme-handlers to emit code for reference resolution and data access, which often
+delegates this to run-time.
 
 Scheme-handlers are often simple enough that we can include an almost complete scheme-handler below.
 
@@ -1264,7 +1276,7 @@ memory-scheme (only) &  31491  \\ \hline
 
 
 We already saw in Section~\ref{messages-as-identifiers} that messaging can be used for resource
-access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{newspeak} take this
+access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{Bracha:2010:MON:1883978.1884007} take this
 approach to its logical conclusion by making all identifiers message-sends and therefore late-bound, eliminating
 all nouns and replacing them with verbs\footnote{Literals are the exception}.  Although
 this elimination of variables as a simplification is conceptually elegant, it leads to practical problems of scattering and tangling of code we
@@ -1281,7 +1293,7 @@ it is (universal) resource identifiers that are the interfaces, and messaging is
 approach is taken to its logical extreme by  by Resource Oriented Computing \cite{roc},
 which encodes all computation into identifiers, with an {\tt action:} scheme that is ``a functional programming language encoded as a URI''.
 
-Although scheme-handlers can be exported via http, Polymorphic Identifiers leave the decision of wether to present a messaging
+Although scheme-handlers can be exported via http, Polymorphic Identifiers leave the decision of whether to present a messaging
 or a resource-based interface to the developers,
 similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\cite{Kochan:2009:PO:1538451}, which closely match the proposal in \cite{Spinellis:2002:MPC:510857.510868}.  Properties are syntactic sugar for a pair of accessor methods and allow clients to use 
  plain identifiers syntax to access values via message-sends, including assignment for setting the value.   However, properties
@@ -1289,26 +1301,26 @@ similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\c
  and don't integrate access to external resources or first class references.
 
 
-The E language\cite{MillerRobustComposition}  supports URI-Expressions as a direct language feature using angle brackets for access to 
+The E language~\cite{MillerRobustComposition}  supports URI-Expressions as a direct language feature using angle brackets for access to 
 resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
-E even allows custom schemes to be defined, but for only for read-access, separate from other identifiers and without the ability to extract references.
+E even allows custom schemes to be defined, but  only for read-access, separate from other identifiers and without the ability to extract references.
 
 The Icon programming language \cite{IconRef} has references as first class values, but these are not extensible and have complex,
-built-in rules for wether they are evaluated or treated as references, rather than having explicit control as with Polymorphic Identifiers.
+built-in rules for whether they are evaluated or treated as references, rather than having explicit control as with Polymorphic Identifiers.
 
-A different approach to resource access comes from the operating system community:  Plan9\cite{plan9names}\cite{plan9network} 
-integrates a wide variety of local and remote resources and services into a single directory tree that is made available on a per-process basis.
+A different approach to resource access comes from the operating system community:  Plan9 
+integrates a wide variety of local and remote~\cite{plan9network} resources and services into a single directory tree~\cite{plan9names} that is made available on a per-process basis.
 User level filesystems like FUSE\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
-system bring some of these ideas to commercial operating systems, but must have access mediated via the kernel and visible to all
+system bring some of these ideas to commercial operating systems, but must have access mediated via the kernel and visible global to all
 processes on a machines. 
 
-   Polymorphic Identifiers also allow different local and remote resource handlers to be combined via
-scheme-handlers, but don't require communication to be string based or mediated by the operating system kernel, although scheme-handlers
-can be exported as filesystems using FUSE if desired.  In addition
-Polymorphic Identifiers integrate such resource access with a general purpose programming language without the need for  
-string-based identifiers and I/O system calls.
+Polymorphic Identifiers also allow different local and remote resource handlers to be combined via
+scheme-handlers, but are a programming language concept and thus integrated with their general purpose
+programming language.  Plan9 servers on the other hand are operating system constructs managed by the
+kernel and accessed from C using standard I/O system calls.  These system calls use string-based identifiers
+to open communications channels and write and read commands and results respectively via I/O calls.
 
-
+\mpw{currently working in this area}
 
 \emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
 in that they allow domain-specific language elements to be added to a language, rather
@@ -1321,31 +1333,6 @@ composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Iden
 are applicable to general purpose programming languages, not just DSLs, while
 at the same time restricting their focus to the identifiers used.
 
-
-
-
-
-Smalltalk reflective facilities \cite{reflective-st} can be used to build custom messaging facilities similar to the
-way messaging is handled by sending HOMs to references in Polymorphic Identifiers, and in fact, HOM
-can be implemented using those reflective facilities.  
-
-
- have long been used to build
-features such as distributed object systems, futures, lazy evaluation, and
-transparent storage mechanisms.  One problem with the Smalltalk facilities
-has been that they are defined in an ad-hoc fashion from error handling routines
-and not sufficiently stratified, with meta-level functions
-interfering with base-level functions and vice-versa.  Another problem is that
-most reflective techniques only apply to messages, not to identifiers, making 
-those techniques unavailable.
-
-Mirrors \cite{mirrors} improve the stratification and
-reflection/intercession capabilities, but are not capable of dealing with pure
-identifiers or of bringing user-defined resource handlers into the language.
-
-The proposed ECMAScript Proxy mechanism \cite{VanCutsemMiller} addresses
-the stratification issues and also integrates some identifier access into the 
-metaprogramming framework, but doesn't allow user-extensible identifiers.
 
 
 
