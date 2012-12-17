@@ -133,19 +133,29 @@
 
 \begin{abstract}
 
-In object oriented programming, direct value (resource) access is generally discouraged or 
-even made impossible, being replaced with access via messaging in order to
-gain the benefits of mediated access, such as encapsulation and polymorphism.
+\emph{Polymorphic Identifiers} provide a uniform mechanism for accessing resources
+no matter whether they are in-process or external, local or remote, built-in or custom-defined,
+supporting abstraction, custom semantics and resource-oriented programming styles.
 
-However, neither messaging itself nor resource access mechanisms built on top
-of messaging achieve these goals, instead causing code duplication, tying varying 
-implementations to specific interfaces, causing brittleness in the face of changes as well
-as performance problems and making parametrized access difficult.
+Existing identifier mechanisms built into programming languages
+appear to be insufficient, because these mechanisms are
+frequently bypassed by developers 
+building their own string-based identifiers and evaluation mechanisms,
+especially when referring to external resources.
 
-We propose \emph{Polymorphic Identifiers}, which
-use URI syntax and a pluggable lookup mechanism to provide
-flexible and user-extensible resource access without the problems
-of brittleness, expressiveness and performance of other approaches.
+Embedding ad-hoc little languages
+as strings into a host language has many drawbacks, such as
+lack of integration, incompatibilities hampering substitutability,
+lack of expressiveness and runtime overhead.
+
+We propose to address these issues by bringing extensible resource access  into
+the programming language using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
+replaced by a little language based on Universal Resource Identifier (URI)~\cite{rfc3986}
+syntax and identifier evaluation made extensible with Open Implementation
+techniques~\cite{OpenImplementations} using pluggable handlers for URI schemes and first
+class references to mediate access.
+  
+
 
 \end{abstract}
 
@@ -159,14 +169,21 @@ of brittleness, expressiveness and performance of other approaches.
 
 \section{Introduction}
 
-We report on \emph{Polymorphic Identifiers}, an experimental
-technique for expanding our ability to directly name and reference different 
-resources
-in programming languages using a common identifier syntax and resolution
-mechanism.
-%These \emph{Polymorphic Identifiers} are not only user-extensible,
-%but can also be manipulated in the programming language, making them first class 
-%entities.
+Beginning with low-level assembly language, programming languages have built-in mechanisms for 
+referring to resources used by the program using human readable names, be they symbolic addresses or variable
+names.   However, despite having these identifiers built-in, resource access
+is often mediated by user-defined, string-based identifiers that are separate from built-in identifiers,
+cannot generally be used interchangeably and don't share implementation.  This is especially true
+of external resources such as files or web-pages, but also of program-internal resources that need to
+be referenced by parameter or require additional behavior.
+
+Although part of the reason may well be familiarity and the weight of existing, string-based APIs such as POSIX,
+limitations of built-in identifiers also play a role:   what kinds of resources can be accessed directly by name is
+highly dependent on the programming language in question, and cannot be easily 
+adapted to a particular requirement.  The syntax of built-in identifiers does not lend itself to representing
+files or URIs, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
+meaning of local identifiers~\cite{gabriel-lisp-identifiers}.
+
 
 
 
@@ -191,8 +208,9 @@ direct, \emph{identifier oblivious} access and
 
 
 
-In Section~\ref{identifiers}, we  look at different ways of accessing resources and show
-the shortcomings of those approaches.  In Section~\ref{polymorphic-identifiers}, we 
+In Section~\ref{identifiers}, we briefly illustrate some of the issues that lead developers to use string-based
+identifiers and then show some of 
+the problems string-based identifiers cause.  In Section~\ref{polymorphic-identifiers}, we 
 introduce \emph{Polymorphic Identifiers} as a reification, abstraction and extension of existing 
 identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
 system, \emph{scheme resolvers} (section~\ref{schemes}), first class \emph{references} (section~\ref{references}),
@@ -219,29 +237,21 @@ global or instance variables to names for disk files or Universal Resource Ident
 \includegraphics[scale=0.5,page=1]{basic-storage.pdf}
 \caption{Generic identifier lookup}
 \label{identifier-eval}
-
 \end{figure}
 
 Whatever the specific type, the relationship between the actual identifier and the
 final value looks like Figure~\ref{identifier-eval}, with slight variations:   there is 
 the identifier itself, which is a human-readable character string, there is some kind
 of store that has identifiable slots or cells and there is a value stored in one of those
-cells.   In order to retrieve a value, the identifier is first converted to a reference using a
+cells.   In order to retrieve a value, the human-readable identifier is first converted to a machine-readable reference using a
  \emph{reference(identifier)} function and then the reference is used to look up an actual
 value from a slot using the \emph{get(reference(identifier))} function.
 
 
-We will look at four distinct types of identifiers that all follow this basic pattern:  language-supported 
-\emph{plain identifiers}, where identifiers directly resolve to values, the use of \emph{messages as identifiers} 
-for encapsulation, the use of \emph{strings as identifiers} for extensible data structures or filesystem access, and
-\emph{reified identifiers}.
 
- While each of these approaches solves a part of the problem,
-none of them is satisfactory in the end, either lacking capability and extensibility or leading to
-irreducible code-duplication and brittleness.
-
-\subsection{Plain identifiers}
+\subsection{Built-in identifiers}
 \label{direct-reference}
+
 Like most programming languages, Smalltalk allows you to just write 
 an identifier by itself, and this will perform an implicit {\tt get} operation, automatically retrieving the value stored in the slot referenced by the identifier, for
 example line 1 of Listing~\ref{variable-lookup} for the identifier {\tt theAnswer}.
@@ -261,16 +271,10 @@ new types of objects such as files or define new access mechanisms.  Dave Robson
 of the Blue Book defining Smalltalk \cite{Goldberg1983} is reported by Ungar and Smith in \cite{Ungar:2007:SEL:1238844.1238853} to have said: ``Yeah, once you’re inside an object, it’s pretty much like Pascal.''
 
 
-  Whereas some languages
-such as C and C++ allow references using the {\em pointer-of} operator {\tt \&} and pointer
-dereference {\tt *}, such indirect references are not available in Smalltalk.
-
-
-\subsection{Messages as identifiers}
-\label{messages-as-identifiers}
 Encapsulation and the potential for polymorphic behavior can be achieved by sending 
 messages to objects in order to get and set the value in question, for example the
-{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.
+{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.  Languages
+with implicit receivers such as Self and Newspeak can (and must) elide the receiver.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=message-access,caption=Retrieve and store value via message sends.]
@@ -313,13 +317,6 @@ as shown in Figure~\ref{ui-widget-msg-access} for a UI widget that is connected
 to the {\tt theAnswer} attribute of the {\tt deepThought} object.
 
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.51,page=1]{ui-widget-generic-access-messages.pdf}
-\caption{Widget using messages for parametrized access}
-\label{ui-widget-msg-access}
-
-\end{figure}
 
 
 \subsection{Strings as identifiers}
@@ -416,9 +413,9 @@ be reused.
 
 Finally, evaluating string identifiers at run-time also imposes overhead.
 
-\subsection{Reified identifiers}
+\subsection{Reified references}
 
-Unlike strings, reified identifiers can be semantically rich and self-contained, 
+Unlike strings, reified references can be semantically rich and self-contained, 
 allowing variations without requiring a separate evaluator.
 Unlike messages they can encapsulate both read and write access in one entity.  
 
@@ -661,12 +658,24 @@ http://datatracker.ietf.org/doc/rfc1738:='New RFC'.
 \end{figure}
 
 In fact,  Objective-Smalltalk is used as a Unix scripting language using the {\tt stsh} command
-interpreter for interactive and batch use.  
+interpreter for interactive and batch use with only minor adaptations to this use-case such
+as semi-automatic parameter and return-value adaptation.
+
 
 The {\tt stcat} script in Listing~\ref{stcat} prints an arbitrary resource to Unix standard output, 
 similar to the way the Unix {\tt cat} command is used to display files\footnote{{\tt stcat} only 
 displays a single resource rather than concatenating several.}.
-In line 2  {\tt stcat} is declared as a method taking the {\tt ref} argument {\tt file}.
+The declaration of the {\tt stcat} script as a method in line 2 serves four purposes:  first, command-line
+parameters are documented and second they can be coerced to the proper type and bound to
+a script variable by the infrastructure rather than each script having to do its own parsing.   Third,
+the script can be integrated into a larger program as an actual method that is invoked by sending
+a message, rather than having to shell out to a separate process, converting arguments to strings
+and parsing any return values via a pipe, and finally simply return values can just be returned from
+the script and are automatically converted to a string and printed to stdout. 
+Any command-line arguments not used by declared parameters
+are bound to the {\tt args} array as strings.
+
+In this particular case, the script is declared as taking the {\tt ref} argument {\tt file}
 A {\tt ref} parameter is a Polymorphic Identifier that is partially evaluated to the reference stage,
 but without retrieving the value.  Retrieving the value of the {\tt file} parameter is done in line 3,
 and the result is automatically output to {\tt stdout} by {\tt stsh} because the declaration in line
@@ -681,7 +690,7 @@ file value.
 \end{figure}
 
 The command  {\tt stcat http://datatracker.ietf.org/doc/rfc1738} shows RFC 1738 from the web site of the rfc-editor, whereas 
-the command {\tt stcat \~\//.bashrc} will display the user's bash startup script, assuming you are a user of the
+the command {\tt stcat file:\~\//.bashrc} will display the user's bash startup script, assuming you are a user of the
 bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
 your home directory.
 
@@ -894,7 +903,7 @@ Both variants are shown in Figure~\ref{http-cached-converted}.
 
 
 With the MIME-mapper in place in the revamped http-scheme, we can now 
-write the flickr.com example from Listing~\ref{nsurl-flickr-draw} inline as {\tt context drawImage:http:///....jpg},
+write the flickr.com example from Listing~\ref{nsurl-flickr-draw} inline as {\tt context drawImage:http:///{\ldots}jpg},
 but using a user-defined {\tt flickr:} scheme, we can be even more concise:  
 {\tt context drawImage: flickr:3559417932\_7208103ed8\_m.jpg}
 
@@ -1275,7 +1284,7 @@ memory-scheme (only) &  31491  \\ \hline
 \label{related-work}
 
 
-We already saw in Section~\ref{messages-as-identifiers} that messaging can be used for resource
+We already saw in Section~\ref{direct-reference} that messaging can be used for resource
 access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{Bracha:2010:MON:1883978.1884007} take this
 approach to its logical conclusion by making all identifiers message-sends and therefore late-bound, eliminating
 all nouns and replacing them with verbs\footnote{Literals are the exception}.  Although
@@ -1357,6 +1366,11 @@ combinators.
 With the user-extensible identifier architecture of Polymorphic Identifiers, it becomes possible to add abstraction
 and information-hiding capabilities to identifiers and expand the use of REST-style
 programming beyond network and Web-environments.
+
+\section*{Acknowledgements}
+
+We would like to thank Gilad Bracha, Carl Friedrich Bolz, Richard Gabriel, and Michael Perscheid for their
+helpful feedback.
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
