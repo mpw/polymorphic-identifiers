@@ -96,11 +96,14 @@
 \newcommand\mpw[1]{\mynote{Marcel}{#1}}
 \newcommand\rh[1]{\mynote{Robert}{#1}}
 
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.85}
 
 
 
 \begin{document}
-\fontsize{9.8}{12}\rm
+%\fontsize{9.7}{12}\rm
 
 \linespread{0.9}
 
@@ -170,10 +173,10 @@ class references to mediate access.
 \section{Introduction}
 
 Programming languages have built-in mechanisms for 
-referring to resources used by the program using human readable names, be they symbolic addresses for
+referring to a program's resources using human readable names, be they symbolic addresses for
 assembly language, variable names or messages.   However, despite having these identifiers built-in, resource access
-is often mediated by user-defined, string-based identifiers that are separate from built-in identifiers,
-cannot generally be used interchangeably and don't share implementation.  This is especially true
+is often mediated by user-defined, string-based identifiers that are separate from built-in identifiers
+and cannot generally be used interchangeably.  This is especially true
 of external resources such as files or web-pages, but also of program-internal resources that need to
 be referenced by parameter or require additional behavior.
 
@@ -181,7 +184,7 @@ be referenced by parameter or require additional behavior.
 
 Although some of these limitations are theoretically addressable using the polymorphism available with
 message-sending, string-based identifiers still abound.
-Part of the reason may well be familiarity and the weight of existing, string-based APIs such as the POSIX
+Part of the reason may well be familiarity and the weight of existing, string-based APIs such as the POSIX~\cite{IEEE:POSIX.1-90}
 file functions, but
 limitations of built-in identifiers also play a role:   what kinds of resources can be accessed directly by name is
 highly dependent on the programming language in question, and cannot be easily 
@@ -189,15 +192,28 @@ adapted to application-specific requirements.  The syntax of built-in identifier
 files or URIs, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
 meaning of local identifiers~\cite{gabriel-lisp-identifiers}.
 
-With non-code resources becoming a significant part of modern program~\cite{android-resources}~\cite{ios-resources}, 
-and with the World Wide Web pushing us towards greater resource-orientation~\cite{fielding-rest}, we looked at ways of 
-interacting more naturally and directly with resources of different kinds.  
-
+With non-code resources becoming a significant part of modern programs~\cite{android-resources}~\cite{ios-resources}, 
+and with the World Wide Web pushing us towards greater resource-orientation~\cite{fielding-rest}, we thought it was
+time to have resource access become more of an integral part of the language, rather than something added on using
+the mechanisms already available.
+  Instead of having many different little resource
+access languages embedded as strings, our basic idea was to add one sufficiently flexible resource access syntax and
+mechanism to the programming language itself, with enough flexibility to adapt to changing requirements.
 
 Our starting point was the Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
 that communicate via messages as well as early bound identifiers accessing variables.  We extended
 this dialect with our late-bound Polymorphic Identifiers and applied this new dialect to a number of
-projects.
+projects, but the same principles could be applied to other languages such as Java, as depicted in
+Figure~\ref{pi-java}.
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=L,label=pi-java,caption=Draw remote image and download an RFC with Polymorphic Identifiers in Java.]
+	drawingContext.drawImage( flickr:3559417932_7208103ed8_m.jpg );
+	file:rfc1738.txt = http://http://datatracker.ietf.org/doc/rfc1738;
+\end{lstlisting}
+\end{figure}
+
 
 
 The contributions of this paper are the following:
@@ -282,8 +298,7 @@ of the Blue Book defining Smalltalk~\cite{Goldberg1983} is reported by Ungar and
 
 Encapsulation and the potential for polymorphic behavior can be achieved by sending 
 messages to objects in order to get and set the value in question, for example the
-{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.  Languages
-with implicit receivers such as Self and Newspeak can (and must) elide the receiver.
+{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.  
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=message-access,caption=Retrieve and store value via message sends.]
@@ -293,7 +308,7 @@ with implicit receivers such as Self and Newspeak can (and must) elide the recei
 \end{figure}
 
 Unlike plain identifiers, actual resource access is fully under developer control, so sending the 
-message {\tt getTheAnswer} can can invoke a method that just retrieves a value from an instance
+message {\tt getTheAnswer} can invoke a method that just retrieves a value from an instance
 variable, reads it from a file or computes it for the next hundred million years.
 
 
@@ -315,23 +330,16 @@ setTheAnswer:newAnswer
 \end{figure}
 
 These trivial accessors can account for 5\% of Java code~\cite{Spinellis:2002:MPC:510857.510868}, and although 
- automatic generation can lessen the burden, it doesn't help the fundamental brittleness of 
+automatic generation can lessen the burden, it doesn't help the fundamental brittleness of 
 having resource access scattered throughout the code-base: if we want to implement an alternative resource access scheme or 
 access to other kinds of resources such as files, we  have to implement or update the accessor methods for each specific resource individually,
-rather than once for each resource type or access methods as a whole.
-
-Creating references is possible with message-based identifiers, but requires not just
-storing the base object, but also both the get and the set accessor message names.
-
-\subsection{References}
+rather than once for each resource type or access methods as a whole.  
 
 
-
-
-\subsection{Strings as identifiers and references}
+\subsection{Strings as identifiers}
 \label{string-identifiers}
 Using strings as identifiers disentangles the identifier from the access operations, but at the cost
-of additional syntactic elements at each call site, as shown in Listing~\ref{kvc-literal-string} using the Cocoa~\cite{Cocoa}
+of additional syntactic elements at each call site, as shown in Listing~\ref{kvc-literal-string} using the Cocoa~\cite{Garfinkel:2002:BCA:560771}
 \emph{Key Value Coding} (KVC)~\cite{KVC} protocol.   Unlike Smalltalk's {\tt instVarNamed:} 
 messages, which directly accesses instance variables, KVC uses accessor messages derived
 from the identifier when available, therefore maintaining encapsulation.
@@ -349,7 +357,7 @@ over message-based identifiers.  It also allows external resources to be referen
 identifiers are the de-facto standard for referencing files or web resources.
 
  However, Listing~\ref{kvc-literal-string} already shows one disadvantage:  whereas
-plain identifiers need just one element to reference a value, the identifier, and message-based identifiers need two,
+plain identifiers need just one element to reference a value, the identifier, and message-based identifiers generally need two,
 the object and the message, string-based identifiers need three:  the object, the access method that interprets the
 string and the string identifier itself.
 
@@ -425,9 +433,7 @@ Finally, evaluating string identifiers at run-time also imposes overhead.
 \subsection{References}
 
 
-
-
-Unlike strings, reified references can be semantically rich and self-contained, 
+Unlike strings, reified reference can be semantically rich and self-contained, 
 allowing variations without requiring a separate evaluator.
 Unlike messages they can encapsulate both read and write access in one entity.  
 
@@ -961,7 +967,7 @@ variable {\tt bozo} exists and {\tt false} if it does not.
 
 References also support a generic API for tree-based structures.   Apart from being used
 by the runtime to support path-based access, these APIs are also used to export arbitrary
-schemes as a user-level filesystem using FUSE or as a web-server using libmicrohttp.
+schemes as a user-level filesystem using FUSE~\cite{fuse} or as a web-server using libmicrohttp~\cite{libmicrohttp}.
 Listing~\ref{fileserver} shows a server that exports a directory via http.
 
 \begin{figure}[htbp]
@@ -985,12 +991,12 @@ meta-data about and perform operations such as querying whether a file is a dire
 
 
 Having the concept of references also regularizes some special-purpose APIs.  For example,
-we can copy a file using the code {\tt file:a := file:b}.  If a {\tt ref:file:} is a reference to a file, what
-happens when we write this reference to a file?  A symbolic link is created\footnote{A hard link
+we can copy a file using the code {\tt file:a := file:b}.  On the other hand, storing a reference 
+to a file in another file with the code {\tt file:a := ref:file:b} creates a symbolic link.\footnote{A hard link
 would be a reference to the inode, which isn't exposed by the kernel}.
 
-References for remote resources include methods for initiating a transfer,
-error-checking and progress monitoring.  
+References for remote resources include methods for initiating a transfer, getting headers and 
+error-checking.
 
 \subsection{Messaging mediated by references}
 
@@ -1106,15 +1112,16 @@ a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-ap
 in a way that is similar to FScript\cite{fscript} and MacRuby~\cite{macruby} in that Objective-Smalltalk classes,
 objects and messages are essentially indistinguishable from their Objective-C counterparts.
 
-Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to allow URIs as identifiers
+Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to allow URIs as identifiers,
+resolving some conflicts along the way,
 and allowing scheme-handlers to emit code for reference resolution and data access, which often
 delegates this to run-time.
 
-Scheme-handlers are often simple enough that we can include an almost complete scheme-handler below.
+%Scheme-handlers are often simple enough that we can include an almost complete scheme-handler below.
 
-\subsection{A simple example scheme}
+%\subsection{A simple example scheme}
 
-Listings~\ref{get-env}-\ref{hasValue-env} show the implementation of a simple scheme,
+Listings~\ref{get-env} and \ref{setvalue-env} show the implementation of a simple scheme,
 the env-scheme that provides access to Unix environment variables.  This scheme is
 one that uses generic references (see Section~\ref{refkinds}), so the scheme is used
 not only for generating references, but the references also call back into the scheme
@@ -1129,11 +1136,6 @@ access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=get-env,caption=Basic lookup in env: scheme.]
--(const char*)cstringValueOfBinding:aBinding
-{
-  return getenv([[aBinding name] UTF8String]);
-}
-
 -bindingForName:aName inContext:aContext
 {
   return [GenericBinding bindingWithName:aName scheme:self];
@@ -1141,7 +1143,7 @@ access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
 
 -valueForBinding:aBinding
 {
-  const char *val=[self cstringValueOfBinding:aBinding];
+  const char *val=getenv([[aBinding name] UTF8String]);
   if ( val ) {
     return [NSString stringWithUTF8String:val];
   } else {
@@ -1156,7 +1158,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=setvalue-env,caption=Set value in env: scheme.]
+\begin{lstlisting}[style=L,label=setvalue-env,caption=Set and check value in env: scheme.]
 -(void)setValue:val forBinding:binding
 {
   val=[newValue stringValue];
@@ -1166,18 +1168,11 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
     unsetenv([[binding name] UTF8String]);
   }
 }
-\end{lstlisting}
-\end{figure}
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=hasValue-env,caption=Checking for presence of value in env: scheme.]
 -(BOOL)isBoundBinding:aBinding {
-  return  [self cstringValueOfBinding:aBinding] != NULL;
+  return  getenv([[aBinding name] UTF8String]) != NULL;
 }
 \end{lstlisting}
 \end{figure}
-
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -1197,22 +1192,30 @@ scheme-handlers proved serendipitous.
 
 
 
-\subsection{Use cases}
+\subsection{Applications}
 
 In addition to scripting tasks using {\tt stsh}, Polymorphic Identifiers have been used in a number
 of applications, ranging from an iPad language learning game via the site generator that produces the {\tt objective.st} web-site to a
-small IDE that uses HTTP to upload code and download debugging information from running processes.  Figure~\ref{pi-inuse}
-has three IDE windows showing, respectively, the setup code for the web-site, part of the IDE code itself that uploads new method definitions
-and finally a window with a live connection to the language learning game running in the iOS simulator in the background (indicated by
-the grayed out URL).
-
+live remote IDE that uses HTTP to upload code and download debug information from running processes.  Figure~\ref{pi-inuse}
+has three IDE windows that show, respectively, the setup code for the web-site, part of the IDE code itself that uploads new method definitions,
+and finally a window with a live connection to the language learning game running in the iOS simulator in the background.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[scale=0.27,page=1]{PolymorphicIdentifiersInUse.png}
+\includegraphics[scale=0.25,page=1]{PolymorphicIdentifiersInUse.png}
 \caption{Polymorphic Identifiers in use}
 \label{pi-inuse}
 \end{figure}
+
+
+The game had a large number of graphical assets that could be used much more simply in code using special schemes for accessing app
+resources, though the overall impact was not very high due to large amounts of layout logic. 
+ The IDE was initially completely written in Objective-C, but dealing with remote resources was so cumbersome that
+those parts were rewritten using Objective-Smalltalk with Polymorphic Identifiers.
+
+The application that gained most from Polymorphic Identifiers was the site generator:  the asset pipeline consisting of static
+content, templating mechanism, dynamic content and a page cache could be directly expressed as a series of connected
+sheme-handlers.  The object that dynamically generates the site's root is placed there using the simple assignment: {\tt dynamic:/  := MPWMainPage \dots}.
 
 
 \subsection{Performance}
@@ -1230,12 +1233,9 @@ a simple AST-walker, so interpretation overhead makes performance differences in
 the underlying lookup disappear.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor, the
 code was self-timing using the {\tt getrusage()} call.  
 
-\mpw{need more details here}
-
-
 \begin{figure}
   \centering
-\begin{minipage}[c]{0.38\textwidth}
+\begin{minipage}[c]{0.3\textwidth}
 \begin{tabular}{|r|r|r|r|r|r|r|r|r|r|r|r|} \hline
 Accesses  & KVC& {\tt var:}   & ratio	\\ 
  & ($\mu$s) & ($\mu$s) & \\ \hline
@@ -1247,7 +1247,7 @@ Accesses  & KVC& {\tt var:}   & ratio	\\
 100000 & 73036 & 1730 &    42.2 \\ \hline
 \end{tabular}
 \end{minipage}
-\begin{minipage}[c]{0.38\textwidth}
+\begin{minipage}[c]{0.39\textwidth}
 \includegraphics[scale=0.5,page=2]{kvc-vs-var.pdf}
 \end{minipage}
 \caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access, log scale}
@@ -1325,12 +1325,9 @@ The E language~\cite{MillerRobustComposition}  supports URI-Expressions as a dir
 resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
 E even allows custom schemes to be defined, but  only for read-access, separate from other identifiers and without the ability to extract references.
 
-The Icon programming language~\cite{IconRef} has references as first class values, but these are not extensible and have complex,
-built-in rules for whether they are evaluated or treated as references, rather than having explicit control as with Polymorphic Identifiers.
-
 A different approach to resource access comes from the operating system community:  Plan9 
 integrates a wide variety of local and remote~\cite{plan9network} resources and services into a single directory tree~\cite{plan9names} that is made available on a per-process basis.
-User level filesystems like FUSE\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
+User level filesystems like FUSE~\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
 system bring some of these ideas to commercial operating systems, but must have access mediated via the kernel and visible global to all
 processes on a machines. 
 
@@ -1340,7 +1337,6 @@ programming language.  Plan9 servers on the other hand are operating system cons
 kernel and accessed from C using standard I/O system calls.  These system calls use string-based identifiers
 to open communications channels and write and read commands and results respectively via I/O calls.
 
-\mpw{currently working in this area}
 
 \emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
 in that they allow domain-specific language elements to be added to a language, rather
@@ -1380,7 +1376,7 @@ programming beyond network and Web-environments.
 
 \section*{Acknowledgements}
 
-We would like to thank Gilad Bracha, Carl Friedrich Bolz, Richard Gabriel, and Michael Perscheid for their
+The authors would like to thank Carl Friedrich Bolz, Gilad Bracha, Richard Gabriel, and Michael Perscheid for their
 helpful feedback.
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
