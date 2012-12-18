@@ -151,7 +151,7 @@ as strings into a host language has many drawbacks, such as
 lack of integration, incompatibilities hampering substitutability,
 lack of expressiveness and runtime overhead.
 
-We propose to address these issues by bringing extensible resource access  into
+We propose bringing extensible resource access  into
 the programming language itself using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
 replaced by a little language based on Universal Resource Identifier (URI)~\cite{rfc3986}
 syntax and identifier evaluation made extensible with Open Implementation
@@ -198,7 +198,7 @@ time to have resource access become more of an integral part of the language, ra
 the mechanisms already available.
   Instead of having many different little resource
 access languages embedded as strings, our basic idea was to add one sufficiently flexible resource access syntax and
-mechanism to the programming language itself, with enough flexibility to adapt to changing requirements.
+mechanism to the programming language itself.
 
 Our starting point was the Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
 that communicate via messages as well as early bound identifiers accessing variables.  We extended
@@ -238,8 +238,8 @@ identifiers and then show some of
 the problems string-based identifiers cause.  In Section~\ref{polymorphic-identifiers}, we 
 introduce \emph{Polymorphic Identifiers} as a reification, abstraction and extension of existing 
 identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
-system, \emph{scheme resolvers} (section~\ref{schemes}), first class \emph{references} (section~\ref{references}),
-parametrized identifiers (section~\ref{parametrized}), and  implementation aspects (section~\ref{implementation}).
+system, \emph{scheme resolvers} (Section~\ref{schemes}), first class \emph{references} (Section~\ref{references}),
+parametrized identifiers (Section~\ref{parametrized}), and  implementation aspects (Section~\ref{implementation}).
 In Section~\ref{evaluation} we look at Polymorphic Identifiers in actual use.  Related work is discussed in Section~\ref{related-work}.
 
 
@@ -605,8 +605,8 @@ The addition of \emph{schemes} to identifiers in order to distinguish different 
 and resource access represents
 the major addition that \emph{Polymorphic Identifiers} bring to a programming language.
 Each scheme is backed by a \emph{scheme-handler}.  Scheme-handlers broadly fall into two categories:
- \emph{primitive schemes} (section~\ref{primitiveSchemes})
-directly encapsulate access to some sort of resource, while \emph{composite schemes} (section~\ref{compositeSchemes})
+ \emph{primitive schemes} (Section~\ref{primitiveSchemes})
+directly encapsulate access to some sort of resource, while \emph{composite schemes} (Section~\ref{compositeSchemes})
 can be used to build new schemes out of existing schemes, forming a scheme algebra.
 
 \sloppy   % FIXME
@@ -632,6 +632,7 @@ so the expression {\bf scheme:http} returns the currently installed http handler
 installed schemes.  Listing~\ref{scheme-scheme} shows the schemes installed by
 default in the scripting environment {\tt stsh}.
 
+\vspace{-0.5em}
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
 > scheme:scheme 
@@ -639,6 +640,7 @@ scheme-resolver with the following schemes: (defaults,  env, class,
     file, ftp,  http, https   default, var, sel,    scheme,    bundle,  mainbundle   )
 \end{lstlisting}
 \end{figure}
+\vspace{-0.5em}
 
 To illustrate the concepts, we will now present a few built-in scheme-handlers, ways to construct new
 scheme-handlers out of existing scheme-handlers and apply these scheme-handlers to common
@@ -879,7 +881,7 @@ By adding a write-back capability to the sequential lookup scheme, where an elem
 retrieved from the second source gets written to the first source, we get a simple \emph{cache} scheme.  
 The caching http scheme we saw earlier in Figure~\ref{fig:http-cached} uses
 separate cache scheme-handlers, one with an in-memory cache (the {\tt SiteMap} from Section~\ref{inmemory})
-and the other with a file cache that consists of a relative scheme (section~\ref{filterschemes}) 
+and the other with a file cache that consists of a relative scheme (Section~\ref{filterschemes}) 
 designating a specific directory in the filesystem.
 
 The code to implement this composed, caching http scheme is similar 
@@ -942,8 +944,8 @@ ref:theAnswer setValue:42.
 
 Having exposed references as first class objects, we can now use them for parametrized 
 access.  The GUI widget example from Section~\ref{identifiers} now
-also takes just one argument in the widget (figure~\ref{ui-widget-reference}) just like
-the ValueHolder version (figure~\ref{ui-widget-valueholder}).
+also takes just one argument in the widget (Figure~\ref{ui-widget-reference}) just like
+the ValueHolder version (Figure~\ref{ui-widget-valueholder}).
 
 \begin{figure}[htbp]
 \centering
@@ -970,6 +972,7 @@ by the runtime to support path-based access, these APIs are also used to export 
 schemes as a user-level filesystem using FUSE~\cite{fuse} or as a web-server using libmicrohttp~\cite{libmicrohttp}.
 Listing~\ref{fileserver} shows a server that exports a directory via http.
 
+\vspace{-1.0em}
 \begin{figure}[htbp]
 \begin{lstlisting}[style=L,label=fileserver,caption=Exporting a directory via http.]
 #!/usr/local/bin/stsh
@@ -980,6 +983,7 @@ server start:nil.
 \end{lstlisting}
 \end{figure}
 
+\vspace{-2.0em}
 
 
 \subsection{Scheme-specific behavior for references}
@@ -1195,10 +1199,10 @@ scheme-handlers proved serendipitous.
 \subsection{Applications}
 
 In addition to scripting tasks using {\tt stsh}, Polymorphic Identifiers have been used in a number
-of applications, ranging from an iPad language learning game via the site generator that produces the {\tt objective.st} web-site to a
+of applications, ranging from an iPad language learning game, the site generator that produces the {\tt objective.st} web-site to a
 live remote IDE that uses HTTP to upload code and download debug information from running processes.  Figure~\ref{pi-inuse}
-has three IDE windows that show, respectively, the setup code for the web-site, part of the IDE code itself that uploads new method definitions,
-and finally a window with a live connection to the language learning game running in the iOS simulator in the background.
+has three IDE windows that show, respectively, the setup code for the web-site, the part of the IDE code itself that uploads new method definitions,
+and finally a window with a live connection to the language learning game running on the iOS simulator in the background.
 
 \begin{figure}[htbp]
 \centering
@@ -1224,8 +1228,10 @@ Like plain identifiers and messages, Polymorphic Identifiers benefit from having
 at least the character to reference conversion step of identifier lookup, yielding performance 
 improvements over string-based identifiers.
 
+\sloppy
 Figure~\ref{var-speed} compares evaluating the identifier {\tt var:stream/target/target} with evaluating the  
-equivalent string-based identifier (using Cocoa KVC): {\tt [stream valueForKeyPath:@"target.target"]}.
+equivalent string-based identifier (using Cocoa KVC): \\  { \centering {\tt [stream valueForKeyPath:@"target.target"]}. }
+\fussy
 
 We use the underlying Objective-C implementation for both the reference and its 
 comparison because Objective-Smalltalk is currently an interpreted environment with
@@ -1233,9 +1239,10 @@ a simple AST-walker, so interpretation overhead makes performance differences in
 the underlying lookup disappear.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor, the
 code was self-timing using the {\tt getrusage()} call.  
 
+\vspace{-4.0em}
 \begin{figure}
-  \centering
-\begin{minipage}[c]{0.3\textwidth}
+%  \centering
+\begin{minipage}[c]{0.38\textwidth}
 \begin{tabular}{|r|r|r|r|r|r|r|r|r|r|r|r|} \hline
 Accesses  & KVC& {\tt var:}   & ratio	\\ 
  & ($\mu$s) & ($\mu$s) & \\ \hline
@@ -1250,6 +1257,7 @@ Accesses  & KVC& {\tt var:}   & ratio	\\
 \begin{minipage}[c]{0.39\textwidth}
 \includegraphics[scale=0.5,page=2]{kvc-vs-var.pdf}
 \end{minipage}
+\vspace{-2.0em}
 \caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access, log scale}
 \label{var-speed}
 \end{figure}
@@ -1282,6 +1290,7 @@ memory-scheme (only) &  31491  \\ \hline
 \begin{minipage}[c]{0.58\textwidth}
 \includegraphics[scale=0.38,page=2]{server-perf.pdf}
 \end{minipage}
+\vspace{-2.0em}
 \caption{Performance of different schemes bridged to http vs. apache}
 \label{http-server-speed}
 \end{figure}
@@ -1320,22 +1329,22 @@ similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\c
  are just syntactic sugar for one type of resource access, they are not user-extensible like Polymorphic Identifiers 
  and don't integrate access to external resources or first class references.
 
+Common LISP~\cite{Steele:1990:CLL:95411} has {\tt symbol-macrolet}, which was explicitly limited to lexical scoping due to fears 
+that having simple identifiers with overloaded meaning could be confusing~\cite{gabriel-lisp-identifiers}, echoing similar concerns by the creators
+of Smalltalk-72 of syntax that was too flexible~\cite{Kay:1996:EHS:234286.1057828}.  Having clear syntactic markers in the form of scheme-prefixes
+and directly associating each prefix with one scheme-handler in Polymorphic Identifiers avoids confusion as to the meaning of specific identifiers.
 
 The E language~\cite{MillerRobustComposition}  supports URI-Expressions as a direct language feature using angle brackets for access to 
-resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
+resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  \\ {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
+
 E even allows custom schemes to be defined, but  only for read-access, separate from other identifiers and without the ability to extract references.
 
 A different approach to resource access comes from the operating system community:  Plan9 
-integrates a wide variety of local and remote~\cite{plan9network} resources and services into a single directory tree~\cite{plan9names} that is made available on a per-process basis.
+integrates a wide variety of local and remote~\cite{plan9network} resources and services into a single directory tree~\cite{plan9names} that is made available on a per-process basis, but mediated by the kernel and accessed only indirectly via system calls and string-based
+identifiers.
 User level filesystems like FUSE~\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
-system bring some of these ideas to commercial operating systems, but must have access mediated via the kernel and visible global to all
+system bring some of these ideas to commercial operating systems, but make these filesystems visible globally to all
 processes on a machines. 
-
-Polymorphic Identifiers also allow different local and remote resource handlers to be combined via
-scheme-handlers, but are a programming language concept and thus integrated with their general purpose
-programming language.  Plan9 servers on the other hand are operating system constructs managed by the
-kernel and accessed from C using standard I/O system calls.  These system calls use string-based identifiers
-to open communications channels and write and read commands and results respectively via I/O calls.
 
 
 \emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
@@ -1357,15 +1366,12 @@ at the same time restricting their focus to the identifiers used.
 \section{Summary and Outlook}
 \label{summary-and-outlook}
 
-We have introduced \emph{Polymorphic Identifiers}, a reified and user extensible 
-generalization of plain identifiers, and shown how they
-solve the problem of polymorphic resource access without
-the code duplication and brittleness of a pure message-oriented approach or the
-numerous problems of the workaround that is using string-based identifiers.
+We have generalized identifiers to \emph{Polymorphic Identifiers}, syntactically and
+semantically integrating flexible resource access directly into a programming language,
+and therefore avoiding the need to use string-based identifier lookup mechanisms.
 
-\emph{Polymorphic Identifiers} allow the substitution of alternate implementations,
-as well as the introduction of 
-application-specific schemes that are completely custom.
+Polymorphic Identifiers allow the substitution of alternate implementations,
+as well as the introduction of custom, application-specific schemes.
 Custom scheme-handlers can be implemented as normal objects and added
 to the language, or even composed from pre-existing handlers and
 combinators.
