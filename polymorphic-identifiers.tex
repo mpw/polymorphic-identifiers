@@ -133,15 +133,15 @@
 
 \begin{abstract}
 
-\emph{Polymorphic Identifiers} provide a uniform mechanism for accessing resources
-no matter whether they are in-process or external, local or remote, built-in or custom-defined,
-supporting abstraction, custom semantics and resource-oriented programming styles.
+\emph{Polymorphic Identifiers} provide a uniform mechanism for accessing different kinds of resources,
+whether they are in-process or external, local or remote, built-in or custom-defined.  They
+support abstraction, custom semantics and resource-oriented programming styles.
 
-Existing identifier mechanisms built into programming languages
-appear to be insufficient, because these mechanisms are
-frequently bypassed by developers 
-building their own string-based identifiers and evaluation mechanisms,
-especially when referring to external resources.
+The identifiers built into existing programming languages are commonly bypassed by developers.
+Instead, string-based identifiers and evaluation mechanisms are created,
+especially when referring to external resources, but also when requiring references with
+non-default semantics.
+
 
 Embedding ad-hoc little languages
 as strings into a host language has many drawbacks, such as
@@ -149,7 +149,7 @@ lack of integration, incompatibilities hampering substitutability,
 lack of expressiveness and runtime overhead.
 
 We propose to address these issues by bringing extensible resource access  into
-the programming language using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
+the programming language itself using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
 replaced by a little language based on Universal Resource Identifier (URI)~\cite{rfc3986}
 syntax and identifier evaluation made extensible with Open Implementation
 techniques~\cite{OpenImplementations} using pluggable handlers for URI schemes and first
@@ -169,41 +169,50 @@ class references to mediate access.
 
 \section{Introduction}
 
-Beginning with low-level assembly language, programming languages have built-in mechanisms for 
-referring to resources used by the program using human readable names, be they symbolic addresses or variable
-names.   However, despite having these identifiers built-in, resource access
+Programming languages have built-in mechanisms for 
+referring to resources used by the program using human readable names, be they symbolic addresses for
+assembly language, variable names or messages.   However, despite having these identifiers built-in, resource access
 is often mediated by user-defined, string-based identifiers that are separate from built-in identifiers,
 cannot generally be used interchangeably and don't share implementation.  This is especially true
 of external resources such as files or web-pages, but also of program-internal resources that need to
 be referenced by parameter or require additional behavior.
 
-Although part of the reason may well be familiarity and the weight of existing, string-based APIs such as POSIX,
+
+
+Although some of these limitations are theoretically addressable using the polymorphism available with
+message-sending, string-based identifiers still abound.
+Part of the reason may well be familiarity and the weight of existing, string-based APIs such as the POSIX
+file functions, but
 limitations of built-in identifiers also play a role:   what kinds of resources can be accessed directly by name is
 highly dependent on the programming language in question, and cannot be easily 
-adapted to a particular requirement.  The syntax of built-in identifiers does not lend itself to representing
+adapted to application-specific requirements.  The syntax of built-in identifiers does not lend itself to representing
 files or URIs, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
 meaning of local identifiers~\cite{gabriel-lisp-identifiers}.
 
+With non-code resources becoming a significant part of modern program~\cite{android-resources}~\cite{ios-resources}, 
+and with the World Wide Web pushing us towards greater resource-orientation~\cite{fielding-rest}, we looked at ways of 
+interacting more naturally and directly with resources of different kinds.  
 
 
+Our starting point was the Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
+that communicate via messages as well as early bound identifiers accessing variables.  We extended
+this dialect with our late-bound Polymorphic Identifiers and applied this new dialect to a number of
+projects.
 
-Our starting point is the Objective-Smalltalk \cite{objst} dialect of Smalltalk, which has objects
-that communicate via messages\cite{Goldberg1983}, but the identifiers that are used to identify 
-objects are early bound by the compiler.  Late-binding of names, encapsulation,
-and polymorphic behavior can only be achieved via message-sends.
-
-
-Identifiers that need to point to other entities or be used in different ways must be defined
-by the programmer and cannot be used interchangeably with built in identifiers.  
 
 The contributions of this paper are the following:
 \begin{enumerate} 
 
-\item a uniform, composable and extensible resource access mechanism for all
-resources in a program, 
-\item  a way of integrating that access mechanism naturally into the language for
-direct, \emph{identifier oblivious} access and
-\item a uniform treatment of references for indirect, \emph{identifier aware} access.
+\item A URI-based identifier syntax that replaces plain identifiers
+	and embedded string-based languages for user-readable access to resources.
+
+\item A pluggable, extensible and composable mechanism for resolving the
+	identifiers defined by the above syntax to references and values via \emph{scheme-handlers}.
+
+\item First class references that mediate access to the actual resources and can be used
+	for programmatic and parametrized access.
+	 
+	
 \end{enumerate}
 
 
@@ -215,7 +224,7 @@ introduce \emph{Polymorphic Identifiers} as a reification, abstraction and exten
 identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
 system, \emph{scheme resolvers} (section~\ref{schemes}), first class \emph{references} (section~\ref{references}),
 parametrized identifiers (section~\ref{parametrized}), and  implementation aspects (section~\ref{implementation}).
-In Section~\ref{evaluation} we evaluate the Polymorphic Identifiers and discuss related work in Section~\ref{related-work}.
+In Section~\ref{evaluation} we look at Polymorphic Identifiers in actual use.  Related work is discussed in Section~\ref{related-work}.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -268,7 +277,7 @@ theAnswer := 42.
 Plain identifiers are bound early and resolved directly.  
 Developers cannot extend them to refer to
 new types of objects such as files or define new access mechanisms.  Dave Robson, one of the authors
-of the Blue Book defining Smalltalk \cite{Goldberg1983} is reported by Ungar and Smith in \cite{Ungar:2007:SEL:1238844.1238853} to have said: ``Yeah, once youÕre inside an object, itÕs pretty much like Pascal.''
+of the Blue Book defining Smalltalk~\cite{Goldberg1983} is reported by Ungar and Smith in~\cite{Ungar:2007:SEL:1238844.1238853} to have said: ``Yeah, once youÕre inside an object, itÕs pretty much like Pascal.''
 
 
 Encapsulation and the potential for polymorphic behavior can be achieved by sending 
@@ -312,14 +321,14 @@ access to other kinds of resources such as files, we  have to implement or updat
 rather than once for each resource type or access methods as a whole.
 
 Creating references is possible with message-based identifiers, but requires not just
-storing the base object, but also both the get and the set accessor message names,
-as shown in Figure~\ref{ui-widget-msg-access} for a UI widget that is connected
-to the {\tt theAnswer} attribute of the {\tt deepThought} object.
+storing the base object, but also both the get and the set accessor message names.
+
+\subsection{References}
 
 
 
 
-\subsection{Strings as identifiers}
+\subsection{Strings as identifiers and references}
 \label{string-identifiers}
 Using strings as identifiers disentangles the identifier from the access operations, but at the cost
 of additional syntactic elements at each call site, as shown in Listing~\ref{kvc-literal-string} using the Cocoa~\cite{Cocoa}
@@ -413,7 +422,10 @@ be reused.
 
 Finally, evaluating string identifiers at run-time also imposes overhead.
 
-\subsection{Reified references}
+\subsection{References}
+
+
+
 
 Unlike strings, reified references can be semantically rich and self-contained, 
 allowing variations without requiring a separate evaluator.
@@ -468,12 +480,11 @@ to implement on in terms of the other by the fact that one is hard-wired into th
 
 \subsection{Discussion}
 
-Although resource access is one of the most basic operations in a programming language, combining it
+Although resource access is one of the most basic operations in a programming language, combining 
+the built-in implementations 
 with features we have come to expect from object-orientation such as encapsulation, polymorphic
-behavior and user-extensibility turns out to be surprisingly difficult.  
-
-Plain identifiers simply do not have the required features, and messaging by itself is limited
-by combining resource names with operations, causing code bloat and brittleness.
+behavior and user-extensibility turns out to be difficult enough that developers resort to using
+strings as identifiers.
 
 Using strings as identifiers does meet our basic goals of allowing changes, but suffers from
 code-bloat at the call sites, lack of interoperability and runtime evaluation overhead.  Reified 
@@ -665,21 +676,15 @@ as semi-automatic parameter and return-value adaptation.
 The {\tt stcat} script in Listing~\ref{stcat} prints an arbitrary resource to Unix standard output, 
 similar to the way the Unix {\tt cat} command is used to display files\footnote{{\tt stcat} only 
 displays a single resource rather than concatenating several.}.
-The declaration of the {\tt stcat} script as a method in line 2 serves four purposes:  first, command-line
-parameters are documented and second they can be coerced to the proper type and bound to
-a script variable by the infrastructure rather than each script having to do its own parsing.   Third,
-the script can be integrated into a larger program as an actual method that is invoked by sending
-a message, rather than having to shell out to a separate process, converting arguments to strings
-and parsing any return values via a pipe, and finally simply return values can just be returned from
-the script and are automatically converted to a string and printed to stdout. 
-Any command-line arguments not used by declared parameters
-are bound to the {\tt args} array as strings.
+The declaration of the {\tt stcat} script as a method in line 2 enables the infrastructure to 
+handle some interfacing tasks such as argument and return value conversion, as well
+as making it possible for the script to be loaded and used as an actual 
 
-In this particular case, the script is declared as taking the {\tt ref} argument {\tt file}
-A {\tt ref} parameter is a Polymorphic Identifier that is partially evaluated to the reference stage,
-but without retrieving the value.  Retrieving the value of the {\tt file} parameter is done in line 3,
-and the result is automatically output to {\tt stdout} by {\tt stsh} because the declaration in line
-2 indicates (by default) that {\tt stcat} has a return value.
+The {\tt ref} type of the {\tt file} parameter means that this parameter will be bound to the
+reference that results from evaluating the Polymorphic Identifier passed as a command
+line parameter.    Line 3 simply retrieves the value of the reference and returns it as
+the return value of the method, which the scripting environment knows to print to {\tt stdout}.
+
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=stcat,caption={\tt stcat} prints contents of any resource.]
@@ -1098,7 +1103,7 @@ for RFCs like the one described in
 
 As discussed earlier \emph{Polymorphic Identifiers} have been implemented as part of Objective-Smalltalk,
 a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-apple} runtime, 
-in a way that is similar to FScript\cite{fscript} and MacRuby \cite{macruby} in that Objective-Smalltalk classes,
+in a way that is similar to FScript\cite{fscript} and MacRuby~\cite{macruby} in that Objective-Smalltalk classes,
 objects and messages are essentially indistinguishable from their Objective-C counterparts.
 
 Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to allow URIs as identifiers
@@ -1184,24 +1189,30 @@ While Polymorphic Identifiers are still very much in the experimental stage, our
 results so far are very encouraging.  What started out as just a hunch, that making
 identifiers pluggable rather than relying on just messaging or a level of indirection
 via strings might prove interesting, has been more than confirmed, and has proven
-very productive.
+very productive in a number of projects.
 
 While some effects were anticipated, others, such as the ability to solve the
 ``assignment problem'' or the discovery of a composition mechanism for
-scheme-handlers proved serendipitous.  Subjectively, programming with Polymorphic
-Identifiers seems natural and code appears to gain conciseness (as the examples
-have shown) while more clearly expressing intent.
+scheme-handlers proved serendipitous.  
 
-\subsection{Abstraction and Encapsulation}
 
-The ability to define application specific storage namespaces via schemes such as {\tt rfc:} or {\tt flickr:}
-allows developers to abstract from the particular storage mechanism used, and the syntactic
-and semantic compatibility of scheme-handlers allows clients to flexibly choose specific storage
-mechanisms and vary them at a later time, code is not bound to a particular storage mechanism.
 
-Integrating this flexible storage mechanism with the language reduces boilerplate and hiding
-the lookup methods eliminates the chances for interoperability-inhibiting naming differences in those lookup methods.
+\subsection{Use cases}
 
+In addition to scripting tasks using {\tt stsh}, Polymorphic Identifiers have been used in a number
+of applications, ranging from an iPad language learning game via the site generator that produces the {\tt objective.st} web-site to a
+small IDE that uses HTTP to upload code and download debugging information from running processes.  Figure~\ref{pi-inuse}
+has three IDE windows showing, respectively, the setup code for the web-site, part of the IDE code itself that uploads new method definitions
+and finally a window with a live connection to the language learning game running in the iOS simulator in the background (indicated by
+the grayed out URL).
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[scale=0.27,page=1]{PolymorphicIdentifiersInUse.png}
+\caption{Polymorphic Identifiers in use}
+\label{pi-inuse}
+\end{figure}
 
 
 \subsection{Performance}
@@ -1299,12 +1310,12 @@ be messages in order to be late-bound, and the related assumption that interface
 
 This assumption certainly doesn't apply to the World Wide Web and the REST architectural style~\cite{fielding-rest}, where
 it is (universal) resource identifiers that are the interfaces, and messaging is the hidden implementation detail.  This 
-approach is taken to its logical extreme by  by Resource Oriented Computing \cite{roc},
+approach is taken to its logical extreme by  by Resource Oriented Computing~\cite{roc},
 which encodes all computation into identifiers, with an {\tt action:} scheme that is ``a functional programming language encoded as a URI''.
 
 Although scheme-handlers can be exported via http, Polymorphic Identifiers leave the decision of whether to present a messaging
 or a resource-based interface to the developers,
-similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\cite{Kochan:2009:PO:1538451}, which closely match the proposal in \cite{Spinellis:2002:MPC:510857.510868}.  Properties are syntactic sugar for a pair of accessor methods and allow clients to use 
+similar to properties in C\#~\cite{Archer:2001:IC:516715} and Objective-C 2.0~\cite{Kochan:2009:PO:1538451}, which closely match the proposal in~\cite{Spinellis:2002:MPC:510857.510868}.  Properties are syntactic sugar for a pair of accessor methods and allow clients to use 
  plain identifiers syntax to access values via message-sends, including assignment for setting the value.   However, properties
  are just syntactic sugar for one type of resource access, they are not user-extensible like Polymorphic Identifiers 
  and don't integrate access to external resources or first class references.
@@ -1314,7 +1325,7 @@ The E language~\cite{MillerRobustComposition}  supports URI-Expressions as a dir
 resources such as files using and to the underlying Java classes:   {\tt $\langle$file:/home/marcs/myFile.txt$\rangle$},  {\tt $\langle$unsafe:java.util.makeCalendar>.getYEAR()$\rangle$}.
 E even allows custom schemes to be defined, but  only for read-access, separate from other identifiers and without the ability to extract references.
 
-The Icon programming language \cite{IconRef} has references as first class values, but these are not extensible and have complex,
+The Icon programming language~\cite{IconRef} has references as first class values, but these are not extensible and have complex,
 built-in rules for whether they are evaluated or treated as references, rather than having explicit control as with Polymorphic Identifiers.
 
 A different approach to resource access comes from the operating system community:  Plan9 
@@ -1336,7 +1347,7 @@ in that they allow domain-specific language elements to be added to a language, 
 than having to create a completely new language with an external DSL or attempt to 
 achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
 
-Like polymorphic embedding of DSLs \cite{polydsl}, \emph{Polymorphic Identifiers} allow
+Like polymorphic embedding of DSLs~\cite{polydsl}, \emph{Polymorphic Identifiers} allow
 a single syntax to be used with multiple, pluggable semantic interpretations permitting
 composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Identifiers}
 are applicable to general purpose programming languages, not just DSLs, while
