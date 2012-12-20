@@ -140,7 +140,7 @@
 whether they are in-process or external, local or remote, built-in or custom-defined.  They
 support abstraction, custom semantics and resource-oriented programming styles.
 
-The identifiers built into existing programming languages are commonly bypassed by developers.
+Identifiers built into existing programming languages are commonly bypassed by developers.
 Instead, string-based identifiers and evaluation mechanisms are created,
 especially when referring to external resources, but also when requiring references with
 non-default semantics.
@@ -148,14 +148,13 @@ non-default semantics.
 
 Embedding ad-hoc little languages
 as strings into a host language has many drawbacks, such as
-lack of integration, incompatibilities hampering substitutability,
+lack of integration, incompatibilities impeding substitutability,
 lack of expressiveness and runtime overhead.
 
 We propose bringing extensible resource access  into
 the programming language itself using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
-replaced by a little language based on Universal Resource Identifier (URI)~\cite{rfc3986}
-syntax and identifier evaluation made extensible with Open Implementation
-techniques~\cite{OpenImplementations} using pluggable handlers for URI schemes and first
+replaced by a little language based on Universal Resource Identifier (URI)
+syntax and identifier evaluation made extensible using pluggable handlers for URI schemes and first
 class references to mediate access.
   
 
@@ -189,7 +188,7 @@ file functions, but
 limitations of built-in identifiers also play a role:   what kinds of resources can be accessed directly by name is
 highly dependent on the programming language in question, and cannot be easily 
 adapted to application-specific requirements.  The syntax of built-in identifiers does not lend itself to representing
-files or URIs, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
+files or Universal Resource Identifiers (URIs)~\cite{rfc3986}, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
 meaning of local identifiers~\cite{gabriel-lisp-identifiers}.
 
 With non-code resources becoming a significant part of modern programs~\cite{android-resources}~\cite{ios-resources}, 
@@ -200,17 +199,17 @@ the mechanisms already available.
 access languages embedded as strings, our basic idea was to add one sufficiently flexible resource access syntax and
 mechanism to the programming language itself.
 
-Our starting point was the Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
-that communicate via messages as well as early bound identifiers accessing variables.  We extended
-this dialect with our late-bound Polymorphic Identifiers and applied this new dialect to a number of
+Our work is based on Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
+that communicate via messages as well as early-bound identifiers accessing variables.  We extend
+this dialect with our late-bound Polymorphic Identifiers using Open Implementation techniques~\cite{OpenImplementations} and apply this new dialect to a number of
 projects, but the same principles could be applied to other languages such as Java, as depicted in
 Figure~\ref{pi-java}.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=pi-java,caption=Draw remote image and download an RFC with Polymorphic Identifiers in Java.]
+\begin{lstlisting}[style=numbers,label=pi-java,caption=Draw a remote image and download an RFC with Polymorphic Identifiers in Java.]
 	drawingContext.drawImage( flickr:3559417932_7208103ed8_m.jpg );
-	file:rfc1738.txt = http://http://datatracker.ietf.org/doc/rfc1738;
+	file:rfc1738.txt = http://datatracker.ietf.org/doc/rfc1738;
 \end{lstlisting}
 \end{figure}
 
@@ -293,7 +292,7 @@ theAnswer := 42.
 Plain identifiers are bound early and resolved directly.  
 Developers cannot extend them to refer to
 new types of objects such as files or define new access mechanisms.  Dave Robson, one of the authors
-of the Blue Book defining Smalltalk~\cite{Goldberg1983} is reported by Ungar and Smith in~\cite{Ungar:2007:SEL:1238844.1238853} to have said: ``Yeah, once youÕre inside an object, itÕs pretty much like Pascal.''
+of the Blue Book defining Smalltalk~\cite{Goldberg1983} is reported by Ungar and Smith to have said: ``Yeah, once you're inside an object, it's pretty much like Pascal.''~\cite{Ungar:2007:SEL:1238844.1238853}
 
 
 Encapsulation and the potential for polymorphic behavior can be achieved by sending 
@@ -301,7 +300,7 @@ messages to objects in order to get and set the value in question, for example t
 {\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.  
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=message-access,caption=Retrieve and store value via message sends.]
+\begin{lstlisting}[style=numbers,label=message-access,caption=Retrieve and store value via message sends.]
   deepThought getTheAnswer.
   deepThought setTheAnswer:42.
 \end{lstlisting}
@@ -321,7 +320,7 @@ ones in Listing~\ref{trivial-accessors}.
 %to warrant special treatment,  the prevalence of polymorphic message sends is also around 5\% according to~\cite{Holzle:1991:ODO:646149.679193}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=trivial-accessors,caption=Trivial accessors.]
+\begin{lstlisting}[style=numbers,label=trivial-accessors,caption=Trivial accessors.]
 getTheAnswer
     ^theAnswer.
 setTheAnswer:newAnswer
@@ -470,7 +469,7 @@ shows the complete process for drawing an image with a specific ID from flickr o
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=nsurl-flickr-draw,caption=Retrieving and drawing an image stored on flickr.com.]
-flickrURL :=NSURL URLWithString:'http://static.flickr.com/2438/'.
+flickrBase :=NSURL URLWithString:'http://static.flickr.com/2438/'.
 imageURL := NSURL URLWithString:'3559417932_7208103ed8_m.jpg'
                   relativeToURL:flickrBase.
 imageData := NSData dataWithContentsOfURL:imageURL.
@@ -482,7 +481,7 @@ context drawImage: (UIImage imageWithData:imageData).
 A final problem, apart from the loss of directness and expressiveness, is that we have now 
 duplicated the identifier lookup mechanism built into the language (see Figure~\ref{identifier-eval})
 in user space.  Such code duplication should be avoided, but we are prevented from applying refactoring
-to implement on in terms of the other by the fact that one is hard-wired into the language and the other is not.
+to implement one in terms of the other by the fact that one is hard-wired into the language and the other is not.
 
 \subsection{Discussion}
 
@@ -524,16 +523,16 @@ user defaults, whereas lines 6-8 show file system access and lines 9-10 access t
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Retrieve \mbox{[and store]} values via Polymorphic Identifiers.]
-theAnswer [:=42 ].
+theAnswer [ :=42 ].
 var:theAnswer [ :=42 ].
-var:deepThought/theAnswer [:= 42. ]
+var:deepThought/theAnswer [ := 42. ]
 var:aDictionary/theAnswer [ := 42.]
 defaults:theAnswer [ := 42 ].
 file:theAnswer.txt [ := 42 ].
 file:answerImage.png.
 img:pictureOf42.
-http://www.depthought.com/theAnswer.
-ref:http://www.depthought.com/theAnswer.
+http://www.deepthought.com/theAnswer.
+ref:http://www.deepthought.com/theAnswer.
 \end{lstlisting}
 \end{figure}
 
@@ -634,7 +633,7 @@ default in the scripting environment {\tt stsh}.
 
 \vspace{-0.5em}
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
+\begin{lstlisting}[style=numbers,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
 > scheme:scheme 
 scheme-resolver with the following schemes: (defaults,  env, class,
     file, ftp,  http, https   default, var, sel,    scheme,    bundle,  mainbundle   )
@@ -702,18 +701,18 @@ file value.
 \end{lstlisting}
 \end{figure}
 
-The command  {\tt stcat http://datatracker.ietf.org/doc/rfc1738} shows RFC 1738 from the web site of the rfc-editor, whereas 
+
+The command  {\tt stcat http://datatracker.ietf.org/doc/rfc1738} shows \break \mbox{Request}
+For Comment 1738 (RFC) from the web site of the rfc-editor, whereas 
 the command {\tt stcat file:\~\//.bashrc} will display the user's bash startup script, assuming you are a user of the
 bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
 your home directory.
+\fussy
 
-
-With a current Unix shell all three of these resource types would have required a different
-access syntax:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
+With a current Unix shell each of these resource types would have used a different
+access syntax or command:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
 web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
 variable, as would using Objective-Smalltalk without Polymorphic Identifiers .
-
-
 
 The {\tt scurl} command in Listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
 it needs to manipulate the identifier.  The {\tt scurl} command
@@ -731,12 +730,10 @@ file:{fileName} := urlref value.
 \end{lstlisting}
 \end{figure}
 
-Line 2 declares
-the script as a method named {\tt scurl} with the single argument {\tt urlref} and no return
-value.  The {\tt urlref} parameter is declared as a {\tt ref}, meaning the string passed will
-be interpreted as a Polymorphic Identifier that is evaluated to its reference but not further.
-We then retrieve the last component of the Polymorphic Identifier into the {\tt fileName}
-variable and finally retrieve the value of the {\tt urlref} and store it into the file that
+
+The declaration in line 2 is similar to our previous example except for declaring that there
+is no return value.   We retrieve the last component of the {\tt urlref} Polymorphic Identifier into the {\tt fileName}
+variable and finally retrieve the value of  {\tt urlref} and store it into the file that
 the {\tt fileName} variable indicates.
 
 The {\tt scurl} command does not only work on web references, but just as well
@@ -838,7 +835,7 @@ website.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
+\begin{lstlisting}[style=numbers,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
 scheme:rfc:=RelativeScheme schemeWithBase: ref:http://datatracker.ietf.org/doc
 \end{lstlisting}
 \end{figure}
@@ -848,11 +845,11 @@ retrieve a specific RFC using the identifier {\tt  rfc:rfc2396}.  Having abstrac
 from the actual store for client code, we can now easily change it, for example
 substituting a different server, a directory in a local filesystem or even an 
 in-memory store.  Relative schemes are common enough that they can be
-created by sending {\tt asScheme} to a reference: {\tt ref:http://datatracker.ietf.org/doc asScheme}.
+created by sending the message {\tt asScheme} to a reference: {\tt ref:http://datatracker.ietf.org/doc asScheme}.
 
 
 %\begin{figure}[htbp]
-%\begin{lstlisting}[style=L,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
+%\begin{lstlisting}[style=numbers,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
 %scheme:rfc:=ref:http://datatracker.ietf.org/doc/ asScheme.
 %\end{lstlisting}
 %\end{figure}
@@ -903,7 +900,7 @@ scheme:http := rawhttp -> filecache -> memcache.
 If we want our {\tt http:} scheme to retrieve domain objects, we instantiate a MIME-mapper
 ({\tt mapper := MIMEMapper defaultMapper}) and add it to the end of the chain of schemes: 
 {\tt rawhttp->filecache->memcache->mapper}.  Alternatively, we can choose to cache the
-domain objects instead using the following: {\tt rawhttp->filecache->mapper->memcache}.
+domain objects instead using the following simple code sequence: {\tt rawhttp -> filecache -> mapper -> memcache}.
 Both variants are shown in Figure~\ref{http-cached-converted}.
 
 
@@ -963,18 +960,18 @@ with a direct reference, only having to prefix a {\tt ref:} at the beginning:  {
 
 \subsection{Common behavior for references}
 \label{common-reference-behavior}
-Apart from retrieving and storing values, references are also used to query and manipulate
+In addition to retrieving and storing values, references are also used to query and manipulate
 metadata.  For example {\tt ref:env:bozo isBound} returns {\tt true} if the environment
 variable {\tt bozo} exists and {\tt false} if it does not.
 
-References also support a generic API for tree-based structures.   Apart from being used
-by the runtime to support path-based access, these APIs are also used to export arbitrary
-schemes as a user-level filesystem using FUSE~\cite{fuse} or as a web-server using libmicrohttp~\cite{libmicrohttp}.
+References also support a generic API for tree-based structures.   These APIs are used
+by the runtime to support path-based access, and also enable arbitrary
+schemes to be exported as a user-level filesystem using FUSE~\cite{fuse} or as a web-server using libmicrohttp~\cite{libmicrohttp}.
 Listing~\ref{fileserver} shows a server that exports a directory via http.
 
 \vspace{-1.0em}
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=fileserver,caption=Exporting a directory via http.]
+\begin{lstlisting}[style=numbers,label=fileserver,caption=Exporting a directory via http.]
 #!/usr/local/bin/stsh
 #-<void>fileserver:<ref>dir
 context loadFramework:'MPWSideWeb'
@@ -1036,7 +1033,7 @@ HOM takes its message argument, in this case {\tt doi:'10.1.1.41.7628'} and conv
 in this case {\tt ?doi=10.1.1.41.7628}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=url-args,caption=URL arguments via reference and higher order message.]
+\begin{lstlisting}[style=numbers,label=url-args,caption=URL arguments via reference and higher order message.]
   viewCiteSeer:=ref:http://citeseerx.ist.psu.edu/viewdoc/summary.
   (viewCiteSeer withArgs doi:'10.1.1.41.7628') value
 \end{lstlisting}
@@ -1046,12 +1043,11 @@ in this case {\tt ?doi=10.1.1.41.7628}.
 \subsection{Assignment via references}
 
 Assignment is one of the few special operations in Smalltalk, like identifier de-reference it cannot be overridden.
-The reason for the special nature of assignment is actually closely related to the monomorphic behavior
-of identifiers:  normal lookup rules for identifiers implicitly means evaluation proceeds to the value, but in order to implement the left
-hand side of an assignment, in order to actually bind a new value to an identifier, we need to stop evaluation
-at the reference, so the left hand side is at a different meta-level than the right hand side\cite{kay-assignment}.
+It is special because it needs different evaluation rules for identifiers on the left hand side of the assignment:
+whereas identifier-evaluation usually yields a value, it needs to yield a reference on the left hand side, so
+a new value can be stored in the slot referenced.
 
-With first-class references, evaluation is always via the reference, so assignment is just a plain, though unsugared
+With first-class references, evaluation is always via the reference, so assignment is just a plain, though unsugared,
 message send that has references as both its receiver and argument.  The references then interact to resolve
 the assignment, and can implement special behavior such as creating a symbolic link for a file-references assigned
 to a file.
@@ -1139,7 +1135,7 @@ access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=get-env,caption=Basic lookup in env: scheme.]
+\begin{lstlisting}[style=numbers,label=get-env,caption=Basic lookup in env: scheme.]
 -bindingForName:aName inContext:aContext
 {
   return [GenericBinding bindingWithName:aName scheme:self];
@@ -1162,7 +1158,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=L,label=setvalue-env,caption=Set and check value in env: scheme.]
+\begin{lstlisting}[style=numbers,label=setvalue-env,caption=Set and check value in env: scheme.]
 -(void)setValue:val forBinding:binding
 {
   val=[newValue stringValue];
@@ -1184,7 +1180,7 @@ Setting the value is handled in an analog fashion using the {\bf setenv()} funct
 \section{Evaluation}
 \label{evaluation}
 
-While Polymorphic Identifiers are still very much in the experimental stage, our
+While Polymorphic Identifiers are still very much in an experimental stage, our
 results so far are very encouraging.  What started out as just a hunch, that making
 identifiers pluggable rather than relying on just messaging or a level of indirection
 via strings might prove interesting, has been more than confirmed, and has proven
@@ -1206,26 +1202,26 @@ and finally a window with a live connection to the language learning game runnin
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[scale=0.25,page=1]{PolymorphicIdentifiersInUse.png}
+\includegraphics[scale=0.32,page=1]{PolymorphicIdentifiersInUse.png}
 \caption{Polymorphic Identifiers in use}
 \label{pi-inuse}
 \end{figure}
 
 
-The game had a large number of graphical assets that could be used much more simply in code using special schemes for accessing app
+The game has a large number of graphical assets that could be used much more simply in code by using special schemes for accessing app
 resources, though the overall impact was not very high due to large amounts of layout logic. 
  The IDE was initially completely written in Objective-C, but dealing with remote resources was so cumbersome that
 those parts were rewritten using Objective-Smalltalk with Polymorphic Identifiers.
 
 The application that gained most from Polymorphic Identifiers was the site generator:  the asset pipeline consisting of static
 content, templating mechanism, dynamic content and a page cache could be directly expressed as a series of connected
-sheme-handlers.  The object that dynamically generates the site's root is placed there using the simple assignment: {\tt dynamic:/  := MPWMainPage \dots}.
+scheme-handlers.  The object that dynamically generates the site's root is placed there using the simple assignment: {\tt dynamic:/  := MPWMainPage \dots}.
 
 
 \subsection{Performance}
 
 Like plain identifiers and messages, Polymorphic Identifiers benefit from having the compiler perform
-at least the character to reference conversion step of identifier lookup, yielding performance 
+at least the character-to-reference conversion step of identifier lookup, yielding performance 
 improvements over string-based identifiers.
 
 \sloppy
@@ -1308,7 +1304,7 @@ We already saw in Section~\ref{direct-reference} that messaging can be used for 
 access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{Bracha:2010:MON:1883978.1884007} take this
 approach to its logical conclusion by making all identifiers message-sends and therefore late-bound, eliminating
 all nouns and replacing them with verbs\footnote{Literals are the exception}.  Although
-this elimination of variables as a simplification is conceptually elegant, it leads to practical problems of scattering and tangling of code we
+this elimination of variables as a simplification is conceptually elegant, it leads to problems of scattering and tangling of code we
 mentioned, and  ``left a complexity that bothers us to this day''~\cite{Ungar:2007:SEL:1238844.1238853}.
 Handling the assignment part of resource access leads to ad-hoc rules and mechanisms to tie together
 the slot accessor methods that Ungar and Smith say ``troubled us a bit''~\cite{Ungar:2007:SEL:1238844.1238853}.
@@ -1342,19 +1338,19 @@ E even allows custom schemes to be defined, but  only for read-access, separate 
 A different approach to resource access comes from the operating system community:  Plan9 
 integrates a wide variety of local and remote~\cite{plan9network} resources and services into a single directory tree~\cite{plan9names} that is made available on a per-process basis, but mediated by the kernel and accessed only indirectly via system calls and string-based
 identifiers.
-User level filesystems like FUSE~\cite{fuse} or the BSD Pass-to-User-Space\cite{kantee:puffs} 
+User level filesystems like FUSE~\cite{fuse} or the BSD Pass-to-User-Space~\cite{kantee:puffs} 
 system bring some of these ideas to commercial operating systems, but make these filesystems visible globally to all
 processes on a machines. 
 
 
-\emph{Polymorphic Identifiers} are similar to Embedded Domain Specific Languages\cite{edsl}
+Polymorphic Identifiers are similar to Embedded Domain Specific Languages~\cite{edsl}
 in that they allow domain-specific language elements to be added to a language, rather
 than having to create a completely new language with an external DSL or attempt to 
 achieve the desired effect with an internal DSL\cite{fowlerdsl}.  
 
-Like polymorphic embedding of DSLs~\cite{polydsl}, \emph{Polymorphic Identifiers} allow
+Like polymorphic embedding of DSLs~\cite{polydsl}, Polymorphic Identifiers allow
 a single syntax to be used with multiple, pluggable semantic interpretations permitting
-composition of functionality\cite{embeddeddsl}.  However, \emph{Polymorphic Identifiers}
+composition of functionality~\cite{embeddeddsl}.  However, Polymorphic Identifiers
 are applicable to general purpose programming languages, not just DSLs, while
 at the same time restricting their focus to the identifiers used.
 
@@ -1366,12 +1362,16 @@ at the same time restricting their focus to the identifiers used.
 \section{Summary and Outlook}
 \label{summary-and-outlook}
 
-We have generalized identifiers to \emph{Polymorphic Identifiers}, syntactically and
-semantically integrating flexible resource access directly into a programming language,
-and therefore avoiding the need to use string-based identifier lookup mechanisms.
+We have created Polymorphic Identifiers, a generalization of identifiers based on URI
+syntax and extensible, pluggable semantics based on scheme-handlers.   
+Polymorphic Identifiers allow any type of resource that can be addressed via URI
+to be directly referenced, avoiding the need to create and use string-based identifiers 
+to access these resources, and providing compiler support for these identifiers.
 
-Polymorphic Identifiers allow the substitution of alternate implementations,
-as well as the introduction of custom, application-specific schemes.
+The uniformity of the syntax and the use of common interfaces for scheme-handlers
+enables polymorphic behavior for resource access, permitting different scheme-handlers
+to be substituted without affecting client code. Application-specific schemes
+enable abstraction.
 Custom scheme-handlers can be implemented as normal objects and added
 to the language, or even composed from pre-existing handlers and
 combinators.
@@ -1380,10 +1380,12 @@ With the user-extensible identifier architecture of Polymorphic Identifiers, it 
 and information-hiding capabilities to identifiers and expand the use of REST-style
 programming beyond network and Web-environments.
 
-\section*{Acknowledgements}
 
-The authors would like to thank Carl Friedrich Bolz, Gilad Bracha, Richard Gabriel, and Michael Perscheid for their
-helpful feedback.
+
+%\section*{Acknowledgements}
+
+%The authors would like to thank Carl Friedrich Bolz, Gilad Bracha, Richard Gabriel, and Michael Perscheid for their
+%helpful feedback.
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
