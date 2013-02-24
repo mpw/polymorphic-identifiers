@@ -1,0 +1,83 @@
+
+R1:  "Could this be used to integrate databases into the language?"
+-------------------------------------------------------------------
+
+Yes, we have integrated LevelDB and others are just as possible.
+
+
+R1:  "Is there a connection with type providers in F#?"
+-------------------------------------------------------
+
+While the goals are similar, type providers are more akin to code-generation for
+WSDL, Database- or XML-Schemas, whereas PIs deal with accessing different 
+resources, with classes/types describing the resources accessed.
+
+
+R1:  "Metaprogramming languages/lightweight implementation?"
+-----------------------------------------------------------
+
+Using compile-time metaprogramming is a viable alternative implementation
+technique, as PI-equivalents are expressible in the host language.
+
+
+R2/R3:  "Generalization to other languages?"
+-----------------------------------------
+
+Yes, Listing 1 shows a potential Java integration, other languages with similar
+object models should work as well.  Common LISP's symbol-macrolet should be
+extensible to PIs.  There will usually be some syntactic overlap that must
+be resolved (for example we only allow full URI syntax for fully-qualified 
+identifiers), but the remainder is straightforward.
+
+
+R4:  "Hard-coding access paths/tightly binding implementations"
+---------------------------------------------------------------
+
+Scheme names are mapped to actual schemes via the scheme-scheme (Section 4),
+so any name used can be (re-)bound to any scheme desired.  Section 4.2 shows
+"http:" rebound to a complex scheme with caching.
+
+However, user-defined scheme names such as "rfc:" (Listing 17) or "flickr:"
+(Listing 1, end of section 4) are the regular case, use of primitive scheme
+names is rare. In fact, the three examples in 8.1 use custom scheme names 
+(page:, rsrc:, pdf:, img:,..) exclusively, primitive scheme names such as 
+file: or http: are used only to define those user-defined schemes.  We should
+probably make that point clearer.
+
+Actual hard-coded access paths would correspond to URLs, we are using URIs
+(http://www.w3.org/TR/uri-clarification/).
+
+
+R4:  "not possible to express [PIs] in standard OO mechanisms (or scala)?"
+--------------------------------------------------------------------------
+
+- Syntactic limitations (characters in filenames and URLs)
+  (for example, Self's 'cc' object can't read ".selfrc" )
+- Stratification issues:  complex paths have to be built incrementally,
+  but then we need to switch to retrieving the resource.   This
+  becomes both syntactically challenging and cognitively tricky,
+  partly because any message we use to retrieve the resource
+  could also be a further path component.
+
+In the end, just using a string is simpler both cognitively and in
+terms of code, and all the programming languages we looked at treat
+such mechanisms as shortcuts and/or curiosities, not as the primary
+mechanism for dealing with external resources, with the primary
+mechanism being string based.
+
+
+R5:  "No References to Self, C#"
+--------------------------------
+
+Section 9, first paragraph for Self (items 33,34 in the bibliography)
+Section 9, fourth paragraph for C# (item 5 in the bibliography)
+
+Although the discussion of message-sending in section 2.1 is presented
+in terms of Java for exposition purposes, it was originally based on
+Self messaging, where "get" is elided and "set" is expressed by a colon.
+
+The automatic generation of accessors mentioned in the last paragraph
+of section 2.1 (the proposed solution of the problem with Java accessors
+discussed in [31]) corresponds to C# (and Objective-C) properties.
+
+

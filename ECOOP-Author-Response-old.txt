@@ -1,0 +1,178 @@
+Responses:
+
+
+1.  No reference to Self and C#?
+--------------------------------
+
+Self and C# are mentioned in Section 9, "Related Work".  Both appear in the
+Bibliography (items 33, 34 for Self, item 5 for C#)
+
+
+2.  Could this be used to integrate databases, with a db: scheme?
+-----------------------------------------------------------------
+
+Yes.  We have integrated LevelDB.  Relational databases impose some mismatch that
+needs to be overcome, but projects like RestSQL demonstrate that it can be done.
+
+
+3.  What about Type Providers in F#
+-----------------------------------
+
+Type providers integrate access mechanisms with the types themselves, similar to
+code-generators that generate classes from XML Schemas.  PIs make this connection
+optional.  A scheme-handler may provide access via a "type" (or class), but it
+can also do so without requiring a type.  Providing a separate type for every
+directory in a filesystem, for example, seems overkill.
+
+
+
+
+4.   What about XJ (XML in Java)?
+---------------------------------
+
+Systems like XJ, Phantom XML and Ecmascript for XML  (E4X) were part of the 
+inspiration for PIs.  PIs generalize these proposals from just XML to all
+access to structured resources, without mapping them to "virtual XML" first
+such as with PhantomXML.
+
+In fact, one of the reasons for choosing URI syntax for PIs was the fact that
+XQuery is embeddable in URIs, and a scheme-handler providing full XQuery 
+processing as a filter for other schemes is planned as a future expansion.
+
+
+5.  Doesn't this distribute and hard-code access mechanisms in source code?
+---------------------------------------------------------------------------
+
+This is an important concern, and fortunately the answer is "No", for 
+several reasons given or alluded to in the paper:
+
+(a) The most trivial reason is that scheme names are not intrinsically
+bound to scheme handlers, but are mapped dynamically via the scheme scheme.
+Therefore, even if a developer chooses to directly reference a "raw" scheme
+like "file:", this access can be rebound without changing all the references.
+
+This is one of the differences with current access mechanisms, which differ
+so much between different types of resources that rebinding is hardly every
+possible in practice.
+
+(b) However, the expected use (and the one we have seen in practice so far)
+is for developers to create their own application-specific schemes and use
+those, such as the "flickr:" and "rfc:" schemes shown in the paper.  Even
+file access is generally not via the raw file scheme, but at the very least
+via a relative scheme that provides a base directory.  The same is true
+of access to http resources.
+
+(c) This difference is pretty much the difference between the classical
+view of URLs (Uniform Resource Locators) und the contemporary view of
+URIs (Uniform Resource Identifiers), as discussed here: 
+
+	http://www.w3.org/TR/uri-clarification/
+
+We chose URIs for this reason.
+
+
+
+6.  Isn't this "object construction" rather than "object identifying"?
+----------------------------------------------------------------------
+
+We have also discovered that the PI mechanism can be used for light-weight
+object construction, for example  color:#ff00ff .  However, the use we
+describe is for constructing names for locations of objects, locations
+that can be read from and stored into, such as in the following statement:
+
+	   file:a := 'a'.  
+
+Expanding into light-weight object-construction is a subject for future
+research.
+
+7.  Can we show that this isn't already possible in Self, C#, Newspeak, Scala, LISP, etc.?
+------------------------------------------------------------------------------------------
+
+Trivially, we obviously can't prove a negative, and just as trivially, all of these
+languages are Turing Complete, so it is obviously possible.
+
+We mention LISP in the Related Work, where a similar mechanism was considered and
+restricted due to fears of it being too confusing.  While not LISP experst ourselves,
+we were assured by a prominent member of the LISP community that PIs appear to 
+solve or at least sufficiently ameliorate that problem, largely due to the syntactic
+marker provided by the URI-scheme.
+
+
+We actually had a longer discussion of why pure messaging approaches such as those
+used in Self and Newspeak, though promising, don't actually work in the end, but 
+curtailed it because in the end we would have had to devote the entire allocated
+space just to demonstrating why different proposals weren't adequate.
+
+Self, for example, has the cc object that uses doesNotUnderstand to read files
+of the names that are sent to it as messages.  However, there is a large set
+of files cc cannot read because their names aren't allowed as Self message 
+names by the syntax.  Also cascaded send read multiple files, there is no
+way to construct multi-level paths.
+
+A similar approach was tried in Newspeak, but in the end it seemed significantly
+more complex and less approachable than just using a string identifier.
+
+In the end, that seems to be the problem with these approaches: they are less
+usable and/or less general than just using a string to name the (external) object,
+as demonstrated by the fact that all of these languages have their primary web
+and file APIs use strings.  
+
+
+
+
+8.  Can this approach be generalized to other languages/lighter-weight implementations?
+---------------------------------------------------------------------------------------
+
+
+
+
+9.   What is the connection to metaprogramming languages?
+---------------------------------------------------------
+
+Very much inspired by... 
+
+
+9.  Can you clarify what happens at compile-time/run-time?
+----------------------------------------------------------
+
+The one thing that definitely happens at compile-time is conversion from
+a string to a polymorphic identifier.  This distinguishes the PI approach
+from APIs that use strings at runtime and then need to parse those strings.
+
+After that, "it depends", mostly on the scheme-provider.   
+
+
+
+Reviewer 1: 
+-----------
+
+Why no mention of nu-Calculus?
+
+-> Not sure it is applicable
+
+
+
+Reviewer 4:
+-----------
+
+(it's a really bad idea!)
+
+Resolving the dissonance (putting the 
+
+
+Case for not being able to express PI features using standard OO mechanisms?
+
+->  (p.22 
+
+
+Re-implementing the entire language in order to get all standard abstraction mechanisms?
+
+->  
+
+
+Reviewer 5:
+-----------
+
+Missing references to C# and Self
+
+-> in the related works section
