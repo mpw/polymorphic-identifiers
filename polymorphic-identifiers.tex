@@ -6,20 +6,21 @@
 
 
 %\documentclass[preprint,authoryear]{acm_proc_article-sp}
-\documentclass{acm_proc_article-sp}
-
+%\documentclass{acm_proc_article-sp}
+%\documentclass[preprint,authoryear]{acm_proc_article-sp}
+\documentclass[preprint,authoryear,10pt]{sigplanconf}
 
 \usepackage{ifthen}
 \usepackage{pifont}
 %\usepackage[small,compact]{titlesec}
 
-\usepackage{mathptmx}
+% \usepackage{mathptmx}
 
-\usepackage{paralist}
+% \usepackage{paralist}
 
-\usepackage[small,it]{caption}
+% \usepackage[small,it]{caption}
 
-%\usepackage[pdftex]{graphicx}
+\usepackage[pdftex]{graphicx}
 
 
 %\usepackage{fancyhdr}
@@ -110,30 +111,37 @@
 
 \linespread{0.9}
 
-%\conferenceinfo{WXYZ '05}{date, City.} 
-%\copyrightyear{2011} 
-%\copyrightdata{[to be supplied]} 
+\conferenceinfo{SPLASH 2013}{date, City.} 
+\copyrightyear{2011} 
+\copyrightdata{[to be supplied]} 
 
 %\titlebanner{banner above paper title}        % These are ignored unless
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 
 \title{Polymorphic Identifiers}
-\subtitle{Unified resource access in Objective-Smalltalk}
+\subtitle{Uniform resource access in Objective-Smalltalk}
 
 %\author{Marcel Weiher\inst{1} \and Robert Hirschfeld\inst{2}}
 %\institute{metaobject ltd. \email{marcel@metaobject.com} \and Hasso Plattner Institut \email{robert.hirschfeld@hpi.uni-potsdam.de}}
 
 
-\numberofauthors{2}
-\author{
-\alignauthor Marcel Weiher\\
-       \affaddr{metaobject ltd.}\\
-       \email{marcel@metaobject.com}
-\alignauthor Robert Hirschfeld\\
-       \affaddr{Hasso Plattner Institut}\\
-       \email{}
-}
+\authorinfo{Marcel Weiher}
+           {metaobject ltd.}
+           {marcel@metaobject.com}
+\authorinfo{Robert Hirschfled}
+           {Hasso Plattner Institut}
+           {hirschfeld@acm.org}
+
+%\numberofauthors{2}
+%\author{
+%\alignauthor Marcel Weiher\\
+%       \affaddr{metaobject ltd.}\\
+%       \email{marcel@metaobject.com}
+%\alignauthor Robert Hirschfeld\\
+%       \affaddr{Hasso Plattner Institut}\\
+%       \email{}
+%}
 
 \maketitle
 
