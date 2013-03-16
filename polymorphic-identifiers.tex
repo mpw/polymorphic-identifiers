@@ -8,7 +8,9 @@
 %\documentclass[preprint,authoryear]{acm_proc_article-sp}
 %\documentclass{acm_proc_article-sp}
 %\documentclass[preprint,authoryear]{acm_proc_article-sp}
-\documentclass[preprint,authoryear,10pt]{sigplanconf}
+%\documentclass[preprint,authoryear,10pt]{sigplanconf}
+
+\documentclass[preprint]{sigplanconf}
 
 \usepackage{ifthen}
 \usepackage{pifont}
@@ -32,7 +34,6 @@
         linkcolor=blue,
         citecolor=red,
         filecolor=black,
-        pagecolor=black,
         urlcolor=black,
         bookmarks=true,
         bookmarksopen=true,
@@ -119,8 +120,7 @@
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 
-\title{Polymorphic Identifiers}
-\subtitle{Uniform resource access in Objective-Smalltalk}
+\title{Uniform resource access in Objective-Smalltalk with Polymorphic Identifiers}
 
 %\author{Marcel Weiher\inst{1} \and Robert Hirschfeld\inst{2}}
 %\institute{metaobject ltd. \email{marcel@metaobject.com} \and Hasso Plattner Institut \email{robert.hirschfeld@hpi.uni-potsdam.de}}
@@ -147,9 +147,10 @@
 
 \begin{abstract}
 
-\emph{Polymorphic Identifiers} provide a uniform mechanism for accessing different kinds of resources,
-whether they are in-process or external, local or remote, built-in or custom-defined.  They
-support abstraction, custom semantics and resource-oriented programming styles.
+\emph{Polymorphic Identifiers} extend the Uniform Access Principle to all
+types of resources, whether in-process, custom, local or remote.
+
+
 
 Identifiers built into existing programming languages are commonly bypassed by developers.
 Instead, string-based identifiers and evaluation mechanisms are created,
@@ -214,11 +215,11 @@ Our work is based on Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite
 that communicate via messages as well as early-bound identifiers accessing variables.  We extend
 this dialect with our late-bound Polymorphic Identifiers using Open Implementation techniques~\cite{OpenImplementations} and apply this new dialect to a number of
 projects, but the same principles could be applied to other languages such as Java, as depicted in
-Figure~\ref{pi-java}.
+Figure~\ref{pijava}.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=pi-java,caption=Draw a remote image and download an RFC with Polymorphic Identifiers in Java.]
+\begin{lstlisting}[style=numbers,label=pijava,caption=Draw a remote image and download an RFC with Polymorphic Identifiers in Java.]
 	drawingContext.drawImage( flickr:3559417932_7208103ed8_m.jpg );
 	file:rfc1738.txt = http://datatracker.ietf.org/doc/rfc1738;
 \end{lstlisting}
@@ -1414,12 +1415,12 @@ programming beyond network and Web-environments.
 \vfill
 \break
 
-\bibliographystyle{abbrv}
+\bibliographystyle{abbrvnat}
 \bibliography{polymorphic-identifiers}
 
 
 % The bibliography should be embedded for final submission.
 
-%\balancecolumns
+\balancecolumns
 
 \end{document}
