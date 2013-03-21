@@ -113,14 +113,14 @@
 \linespread{0.9}
 
 \conferenceinfo{SPLASH 2013}{date, City.} 
-\copyrightyear{2011} 
+\copyrightyear{2013} 
 \copyrightdata{[to be supplied]} 
 
 %\titlebanner{banner above paper title}        % These are ignored unless
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 
-\title{Uniform resource access in Objective-Smalltalk with Polymorphic Identifiers}
+\title{Uniform Resource Access in Objective-Smalltalk with Polymorphic Identifiers}
 
 %\author{Marcel Weiher\inst{1} \and Robert Hirschfeld\inst{2}}
 %\institute{metaobject ltd. \email{marcel@metaobject.com} \and Hasso Plattner Institut \email{robert.hirschfeld@hpi.uni-potsdam.de}}
@@ -147,29 +147,27 @@
 
 \begin{abstract}
 
-\emph{Polymorphic Identifiers} extend the Uniform Access Principle to all
-types of resources, whether in-process, custom, local or remote.
+In object-oriented programming, polymorphic dispatch of operations
+decouples clients from specific providers of services and allows 
+implementations to be modified or substituted without affecting clients. 
 
+The Uniform Access Principle (UAP) tries to extend these qualities to 
+resource access by demanding that access to state be indistinguishable
+from access to operations.  Despite language features supporting the
+UAP, the overall goal of substitutability has not been achieved for
+alternative resource or access mechanisms:    
+resources are bound to specific 
+access mechanisms and vice versa.  Changing storage or 
+access patterns either requires changes to both clients and
+services providers or imposes significant penalties in terms of
+code-duplication and/or performance overhead.
 
-
-Identifiers built into existing programming languages are commonly bypassed by developers.
-Instead, string-based identifiers and evaluation mechanisms are created,
-especially when referring to external resources, but also when requiring references with
-non-default semantics.
-
-
-Embedding ad-hoc little languages
-as strings into a host language has many drawbacks, such as
-lack of integration, incompatibilities impeding substitutability,
-lack of expressiveness and runtime overhead.
-
-We propose bringing extensible resource access  into
-the programming language itself using \emph{Polymorphic Identifiers}:    Existing language identifier syntax is
-replaced by a little language based on Universal Resource Identifier (URI)
-syntax and identifier evaluation made extensible using pluggable handlers for URI schemes and first
-class references to mediate access.
-  
-
+We propose introducing first class identifiers as polymorphic names for storage locations
+to solve these problems.  With these \emph{Polymorphic Identifiers}, we show that
+we can provide uniform access to a wide variety of resource types as well as 
+storage and access mechanism, whether parametrized or direct, without affecting
+client code, without causing code duplication improving performance  510\%
+over existing methods in some cases.
 
 \end{abstract}
 
@@ -182,6 +180,9 @@ class references to mediate access.
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
 \section{Introduction}
+
+
+
 
 Programming languages have built-in mechanisms for 
 referring to a program's resources using human readable names, be they symbolic addresses for
@@ -351,7 +352,9 @@ rather than once for each resource type or access methods as a whole.
 \label{string-identifiers}
 Using strings as identifiers disentangles the identifier from the access operations, but at the cost
 of additional syntactic elements at each call site, as shown in Listing~\ref{kvc-literal-string} using the Cocoa~\cite{Garfinkel:2002:BCA:560771}
-\emph{Key Value Coding} (KVC)~\cite{KVC} protocol.   Unlike Smalltalk's {\tt instVarNamed:} 
+\emph{Key Value Coding} (KVC)
+%~\cite{KVC}
+ protocol.   Unlike Smalltalk's {\tt instVarNamed:} 
 messages, which directly accesses instance variables, KVC uses accessor messages derived
 from the identifier when available, therefore maintaining encapsulation.
 
