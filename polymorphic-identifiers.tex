@@ -155,19 +155,18 @@ The Uniform Access Principle (UAP) tries to extend these qualities to
 resource access by demanding that access to state be indistinguishable
 from access to operations.  Despite language features supporting the
 UAP, the overall goal of substitutability has not been achieved for
-alternative resource or access mechanisms:    
-resources are bound to specific 
-access mechanisms and vice versa.  Changing storage or 
-access patterns either requires changes to both clients and
-services providers or imposes significant penalties in terms of
+either alternative resources such as keyed storage, files or web pages, or for alternate 
+access mechanisms:    
+specific kinds of resources are bound to specific access mechanisms and vice versa.
+Changing storage or access patterns either requires changes to both clients and
+service providers and trying to maintain the UAP imposes significant penalties in terms of
 code-duplication and/or performance overhead.
 
 We propose introducing first class identifiers as polymorphic names for storage locations
 to solve these problems.  With these \emph{Polymorphic Identifiers}, we show that
 we can provide uniform access to a wide variety of resource types as well as 
 storage and access mechanism, whether parametrized or direct, without affecting
-client code, without causing code duplication improving performance  510\%
-over existing methods in some cases.
+client code, without causing code duplication and improving performance significantly.
 
 \end{abstract}
 
@@ -181,78 +180,56 @@ over existing methods in some cases.
 
 \section{Introduction}
 
+Imperative object oriented languages such as Smalltalk, C\#, Java or Objective-C provide
+built-in storage for their objects in the form of instance variables.  These instance
+variables 
+
+Imperative programming languages such a Pascal or C clearly distinguish between
+data access and procedure or function invocation at the language level.  Data 
+access is via \emph{L-Values}, that is \emph{Locations} that point into a \emph{store}~\cite{StracheyFund}
+and can be read or written, whereas procedures and functions can only be invoked.
+
+\begin{itemize}
+\item only one kind of state, others via procedural abstraction (I/O, hash-table, ...)
+\item early OOP still has that distinction
+\item conflicts with representation independence, so UAP
+\item implementations of UAP:  remove state access / properties
+\item Problem:  still not enough, state variants leak
+\item 
+\end{itemize}
+
+
+Imperative programming languages feature the concept of a store with locations.
+Locations or \emph{L-Values} are characterized by the essential features of having content 
+(an associated R-Value) and 2 operations to access and update this value from the location,
+the \emph{Load-Update-Pair} or \emph{LUP} (also Strachey).  Strachey decouples the definition of a store
+from the notion of memory or addressability. 
+
+The same goes for parametrized access via pointers, which are 
+R-Values that represent locations.  Pointers are characterized by two polymorphic 
+operations, \emph{Follow} and \emph{Pointer}.  
+
+Programming languages such as Pascal or C implement the store as main memory, with
+identifiers mediating access.  We can compose these identifiers, use them on the LHS and RHS
+and partially use them for indirect access.  Computational abstraction is handled separately.
+
+Object-oriented programming languages mostly maintain the distinction between computational
+and storage abstraction, with polymorphism and most other abstraction mechanisms only
+applying to computational abstraction.  The better support for abstraction afforded by 
+the computational abstraction mechanism has led to storage abstraction being 
+de-emphasized by convention (Java, C\#,..) or by removing it partially (Smalltalk) or 
+entirely (Self, Newspeak) from the user-visible language, reducing the number
+of concepts in the language.  
 
 
 
-Programming languages have built-in mechanisms for 
-referring to a program's resources using human readable names, be they symbolic addresses for
-assembly language, variable names or messages.   However, despite having these identifiers built-in, resource access
-is often mediated by user-defined, string-based identifiers that are separate from built-in identifiers
-and cannot generally be used interchangeably.  This is especially true
-of external resources such as files or web-pages, but also of program-internal resources that need to
-be referenced by parameter or require additional behavior.
+The Uniform Access Principle (UAP) was coined by Meyer to formalize this relationship:  
+access to state should be indistinguishable from computation.  However, the current
+implementations interpret this as applying only to state in instance variables of objects.
 
 
 
-Although some of these limitations are theoretically addressable using the polymorphism available with
-message-sending, string-based identifiers still abound.
-Part of the reason may well be familiarity and the weight of existing, string-based APIs such as the POSIX~\cite{IEEE:POSIX.1-90}
-file functions, but
-limitations of built-in identifiers also play a role:   what kinds of resources can be accessed directly by name is
-highly dependent on the programming language in question, and cannot be easily 
-adapted to application-specific requirements.  The syntax of built-in identifiers does not lend itself to representing
-files or Universal Resource Identifiers (URIs)~\cite{rfc3986}, and the lookup mechanism tends to be fixed, for example to avoid confusion as to the
-meaning of local identifiers~\cite{gabriel-lisp-identifiers}.
 
-With non-code resources becoming a significant part of modern programs~\cite{android-resources}~\cite{ios-resources}, 
-and with the World Wide Web pushing us towards greater resource-orientation~\cite{fielding-rest}, we thought it was
-time to have resource access become more of an integral part of the language, rather than something added on using
-the mechanisms already available.
-  Instead of having many different little resource
-access languages embedded as strings, our basic idea was to add one sufficiently flexible resource access syntax and
-mechanism to the programming language itself.
-
-Our work is based on Objective-Smalltalk~\cite{objst} dialect of Smalltalk~\cite{Goldberg1983}, which has objects
-that communicate via messages as well as early-bound identifiers accessing variables.  We extend
-this dialect with our late-bound Polymorphic Identifiers using Open Implementation techniques~\cite{OpenImplementations} and apply this new dialect to a number of
-projects, but the same principles could be applied to other languages such as Java, as depicted in
-Figure~\ref{pijava}.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=pijava,caption=Draw a remote image and download an RFC with Polymorphic Identifiers in Java.]
-	drawingContext.drawImage( flickr:3559417932_7208103ed8_m.jpg );
-	file:rfc1738.txt = http://datatracker.ietf.org/doc/rfc1738;
-\end{lstlisting}
-\end{figure}
-
-
-
-The contributions of this paper are the following:
-\begin{enumerate} 
-
-\item A URI-based identifier syntax that replaces plain identifiers
-	and embedded string-based languages for user-readable access to resources.
-
-\item A pluggable, extensible and composable mechanism for resolving the
-	identifiers defined by the above syntax to references and values via \emph{scheme-handlers}.
-
-\item First class references that mediate access to the actual resources and can be used
-	for programmatic and parametrized access.
-	 
-	
-\end{enumerate}
-
-
-
-In Section~\ref{identifiers}, we briefly illustrate some of the issues that lead developers to use string-based
-identifiers and then show some of 
-the problems string-based identifiers cause.  In Section~\ref{polymorphic-identifiers}, we 
-introduce \emph{Polymorphic Identifiers} as a reification, abstraction and extension of existing 
-identifier lookup mechanisms.  After that we look at components of the Polymorphic Identifier (PI)
-system, \emph{scheme resolvers} (Section~\ref{schemes}), first class \emph{references} (Section~\ref{references}),
-parametrized identifiers (Section~\ref{parametrized}), and  implementation aspects (Section~\ref{implementation}).
-In Section~\ref{evaluation} we look at Polymorphic Identifiers in actual use.  Related work is discussed in Section~\ref{related-work}.
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -261,258 +238,205 @@ In Section~\ref{evaluation} we look at Polymorphic Identifiers in actual use.  R
 
 
 
-\section{Identifiers}
-\label{identifiers}
+\section{Non-uniform access}
+\label{nonuniform}
 %\epigraph{When programming a component, the right computation model for the component is the least expressive model that results in a natural program.}{Rule of Least Expressiveness.}
 
-
-Identifiers that name resources come in many different forms ranging from local,
-global or instance variables to names for disk files or Universal Resource Identifiers (URIs)~\cite{rfc3986} pointing to network resources.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.5,page=1]{basic-storage.pdf}
-\caption{Generic identifier lookup}
-\label{identifier-eval}
-\end{figure}
-
-Whatever the specific type, the relationship between the actual identifier and the
-final value looks like Figure~\ref{identifier-eval}, with slight variations:   there is 
-the identifier itself, which is a human-readable character string, there is some kind
-of store that has identifiable slots or cells and there is a value stored in one of those
-cells.   In order to retrieve a value, the human-readable identifier is first converted to a machine-readable reference using a
- \emph{reference(identifier)} function and then the reference is used to look up an actual
-value from a slot using the \emph{get(reference(identifier))} function.
+This section provides three resource access scenarios where uniform access is difficult to achieve
+with standard mechanisms, leading to compromises and non-uniform access patterns in practical
+code.  Please note that this section is not about exhaustively enumerating all possible solutions
+or conclusively proving that no better solutions exist. Instead it highlights that for common and
+simple situations, achieving the goals of the UAP is not necessarily simple and obvious, and
+non-uniform solutions are often viable and commonly used alternatives.
 
 
-
-\subsection{Built-in identifiers}
-\label{direct-reference}
-
-Like most programming languages, Smalltalk allows you to just write 
-an identifier by itself, and this will perform an implicit {\tt get} operation, automatically retrieving the value stored in the slot referenced by the identifier, for
-example line 1 of Listing~\ref{variable-lookup} for the identifier {\tt theAnswer}.
-Storing into the slot is accomplished with
-the assignment operator {\tt :=} shown in line 2, which is equivalent to a {\tt set} operation.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=variable-lookup,caption=Retrieve and store value via plain identifier.]
-theAnswer.
-theAnswer := 42.
-\end{lstlisting}
-\end{figure}
-
-Plain identifiers are bound early and resolved directly.  
-Developers cannot extend them to refer to
-new types of objects such as files or define new access mechanisms.  Dave Robson, one of the authors
-of the Blue Book defining Smalltalk~\cite{Goldberg1983} is reported by Ungar and Smith to have said: ``Yeah, once you're inside an object, it's pretty much like Pascal.''~\cite{Ungar:2007:SEL:1238844.1238853}
+\begin{table}
+\center
+\begin{tabular}{|r|c|c|} \hline
+   & C\#  	 & Objective-C  		 \\\hline 
+read property 	 & {\tt c = a.b; }	 & {\tt c = a.b;  }		 \\\hline 
+write property 	 & {\tt a.b = c; }	 & {\tt a.b = c; }		 \\\hline 
+send message  & {\tt c = a.b();  }	 & { c =  [a b]; }		 \\\hline 
+\end{tabular}
+\caption{C\# and Objective-C syntax}
+\label{objc-syntax}
+\end{table}
 
 
-Encapsulation and the potential for polymorphic behavior can be achieved by sending 
-messages to objects in order to get and set the value in question, for example the
-{\tt deepThought}~\cite{adams1997hitchhiker}  object in Listing~\ref{message-access}.  
+
+\subsection{User-defined storage implementations}
+
+Although language features supporting the UAP make it easy to substitute a single 
+instance variable with a pair of methods or vice versa, substituting custom stores,
+and doing so wholesale, is more difficult.
+
+For our examples, we will be using a trivial {\tt Person} class shown in Listing~\ref{personclassdef}
+using Objective-C syntax with property definitions for attributes {\tt name} and {\tt age}.
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=message-access,caption=Retrieve and store value via message sends.]
-  deepThought getTheAnswer.
-  deepThought setTheAnswer:42.
-\end{lstlisting}
-\end{figure}
-
-Unlike plain identifiers, actual resource access is fully under developer control, so sending the 
-message {\tt getTheAnswer} can invoke a method that just retrieves a value from an instance
-variable, reads it from a file or computes it for the next hundred million years.
-
-
-This added flexibility comes at the cost of tangling resource names with the operations on those
-resources (  $({\tt get}|{\tt set}) \times {\mbox{\em resourceName}} ) $ %= ({\tt getTheAnswer},{\tt setTheAnswer}) $), thus
-increasing the number of identifiers by a factor of two and also scattering the resource access code
-throughout individual accessor methods such as the
-ones in Listing~\ref{trivial-accessors}.  
-%and though the paper argues that this 5\% of code is \emph{not} enough
-%to warrant special treatment,  the prevalence of polymorphic message sends is also around 5\% according to~\cite{Holzle:1991:ODO:646149.679193}.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=trivial-accessors,caption=Trivial accessors.]
-getTheAnswer
-    ^theAnswer.
-setTheAnswer:newAnswer
-    theAnswer := newAnswer.
-\end{lstlisting}
-\end{figure}
-
-These trivial accessors can account for 5\% of Java code~\cite{Spinellis:2002:MPC:510857.510868}, and although 
-automatic generation can lessen the burden, it doesn't help the fundamental brittleness of 
-having resource access scattered throughout the code-base: if we want to implement an alternative resource access scheme or 
-access to other kinds of resources such as files, we  have to implement or update the accessor methods for each specific resource individually,
-rather than once for each resource type or access methods as a whole.  
-
-
-\subsection{Strings as identifiers}
-\label{string-identifiers}
-Using strings as identifiers disentangles the identifier from the access operations, but at the cost
-of additional syntactic elements at each call site, as shown in Listing~\ref{kvc-literal-string} using the Cocoa~\cite{Garfinkel:2002:BCA:560771}
-\emph{Key Value Coding} (KVC)
-%~\cite{KVC}
- protocol.   Unlike Smalltalk's {\tt instVarNamed:} 
-messages, which directly accesses instance variables, KVC uses accessor messages derived
-from the identifier when available, therefore maintaining encapsulation.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=kvc-literal-string,caption=Retrieve and store value via string identifier.]
-deepThought valueForKey:'theAnswer'.
-deepThought setValue:42 forKey:'theAnswer'.
-\end{lstlisting}
-\end{figure}
-
-Separating identifiers from their access methods allows new object types or stores to be referenced by redefining
-the access methods once, without having to do additional work for each individual resource, a clear advantage
-over message-based identifiers.  It also allows external resources to be referenced, which is why string-based
-identifiers are the de-facto standard for referencing files or web resources.
-
- However, Listing~\ref{kvc-literal-string} already shows one disadvantage:  whereas
-plain identifiers need just one element to reference a value, the identifier, and message-based identifiers generally need two,
-the object and the message, string-based identifiers need three:  the object, the access method that interprets the
-string and the string identifier itself.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=string-identifiers-custom,caption=Retrieve and store value with custom stores.]
-aDictionary objectForKey:'theAnswer'.
-aDictionary setObject:42 forKey:'theAnswer'.
-\end{lstlisting}
-\end{figure}
-%NSDefaults standardUserDefaults objectForKey:'theAnswer'.
-%NSDefaults standardUserDefaults setObject:'42' forKey:'theAnswer'.
-
-
-
-In addition to the syntactic overhead at each call-site, this requirement to separately specify the interpreter
-for the string identifier opens the way to having a separate interpreter for each type of store. 
-Listing~\ref{string-identifiers-custom} shows this effect for Cocoa dictionaries, which use a set of messages for
-access ({\tt objectForKey:} and {\tt setObject:forKey:}) that is different from the KVC messages above, meaning
- that dictionaries and objects are not interchangeable.  
-The same differences apply to Smalltalk collections and objects which use {\tt at:} and {\tt at:put:} vs. {\tt instVarNamed:} and {\tt instVarNamed:put:}
-respectively.
-
-\sloppy		%  FIXME
-
-File system access uses yet another set of messages, coupling code that wishes to use the filesystem tightly to the filesystem,
-rather than having interchangeable resource providers.  Whereas raw bytes can be read from disk using
-{\tt NSData dataWithContentsOfFile:'theAnswer.txt'} and strings using 
-{\tt NSString stringWithContentsOfFile:'theAnswer.txt'},  Listing~\ref{drawing-image-from-file} shows two different methods
-for loading an image from the file-system for drawing on a graphics context, the first directly from a filesystem path,
-the second using a specialized method for obtaining named images from the application's resources.
-
-\fussy
-
-%'42' writeToFile:'theAnswer.txt' atomically:YES.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=drawing-image-from-file,caption=Drawing an image stored in a file.]
-context drawImage:(UIImage imageWithContentsOfFile:'answerImage.png').
-context drawImage:(UIImage imageNamed:'pictureOf42').
+\begin{lstlisting}[style=numbers,label=personclassdef,caption=Person class.]
+@interface Person : NSObject 
+{}
+@property (strong) NSString *name;
+@property (assign) NSNumber *age;
+...
+@end
+@implementation Person
+@synthesize name,age, ...;
+@end
 \end{lstlisting}
 \end{figure}
 
 
-Another problem with strings is that access paths frequently have to be composed from a combination of system-provided base paths
-and fixed as well as variable components, using string processing, for example computing the location of a specific RFC relative
-to a directory in the user's home directory  ({\tt \$HOME/rfcs/\$rfcName}) as shown in Listing~\ref{rfcs-directory}.
+Dictionaries provide a generic interface to access their contents, so they have
+one method for retrieving objects by key and another method for storing objects
+by key, in our example {\tt objectForKey:} and {\tt setObject:forKey:} whereas
+object properties can be accessed using dot notation and the property name.
+Listing~\ref{dict-vs-property1} summarizes the differences, it is clear that implementations
+cannot simply be substituted as is.
+
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=rfcs-directory,caption=Accessing a specific RFC in a directory relative to the user's \$HOME.]
-home := NSProcessInfo processInfo environment objectForKey:'HOME'.
-rfcDir  := home stringByAppendingPathComponent:'rfcs'.
-rfcPath := rfcDir stringByAppendingPathComponent:rfcName.
-rfcText := NSString stringWithContentsOfFile:rfcPath.
+\begin{lstlisting}[style=numbers,label=dict-vs-property1,caption=Dictionary vs. Property.]
+person.name;
+person.name = newName;
+[person objectForKey:@"name"];
+[person setObject:newName forKey:@"name];
+\end{lstlisting}
+\end{figure}
+
+There are three basic options for bridging the gap and making access uniform between the
+dictionary and the object:
+\begin{enumerate}
+\item  Listing~\ref{compatibility1} adapts the object to the dictionary's protocol by
+	 implementing {\tt objectForKey:} and {\tt setObjectForKey:} and mapping the keys
+	 to properties.
+\item Listing~\ref{compatibility2} adapts the dictionary to the object's protocol by 
+	implementing cover methods for every potential attribute that is to be stored.
+\item Listing~\ref{compatibility3} also adapts the dictionary to the object's protocol, but
+	this time by implementing the "forwardInvocation:" error handler that is invoked
+	when a message is not understood by an object.
+\end{enumerate}
+
+None of these options is particularly appealing, as they all involve either performance penalties,
+repetitive code or both.
+	
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=compatibility1,caption=Making an object dictionary-compatible.]
+-objectForKey:aKey
+{
+  if ( [aKey isEqual:@"name] ) {
+    return self.name;		
+  } else if ( [aKey isEqual:@"age] ) {
+    return self.age;
+  } else if ...
+  }
+}
+-setObject:newObject forKey:aKey 
+  if ( [aKey isEqual:@"name] ) {
+    return self.name=newObject;		
+  } else if ( [aKey isEqual:@"age] ) {
+    return self.age=newObject;
+  } else if ...
+  }
+}
+\end{lstlisting}
+\end{figure}
+
+Adopting the dictionary's protocol as in Listing~\ref{compatibility1} as the uniform interface between
+clients and their service providers means 
+that the language's built in notations for access will no longer be used for interfacing between
+objects, rather {\tt objectForKey:} and {\tt setObject:forKey:} will now be used universally.  In addition
+to bloating client code and making it virtually unreadable, this also means having to implement
+the {\tt objectForKey:}/{\tt setObject:forKey:} methods for every object.  These methods are not just
+boilerplate that duplicates the already-existing property definitions, it is also more than an order
+of magnitude slower than the built-in access, and slower even than dictionary access.
+
+In combination, these aspects strongly discourage object-modeling, as just using dictionaries
+everywhere is not just less code, but also faster than introducing object-models.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=compatibility2,caption=Making a dictionary object-compatible.]
+-(NSString*)name {
+    return [self objectForKey:@"name];
+}
+-(void)setName:(NSString*)newName
+{
+  [self setObject:newName forKey:@"name];
+}
+-(NSNumber*)age {
+    return [self objectForKey:@"age];
+}
+-(void)setAge:(NSNumber*)newAge
+{
+  [self setObject:newName forKey:@"age];
+}
+...
+\end{lstlisting}
+\end{figure}
+
+Standardizing on property access and/or message sends keeps the interface clean and fast,
+with keyed lookups confined to the insides of objects.  
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=compatibility3,caption=Compatibility via forwardInvocation.]
+-(void)forwardInvocation:(NSInvocation*)inv
+{
+  SEL sel=[inv selector];
+  NSString *msg=NSStringFromSelector( sel );
+  if ( [msg hasPrefix:"@"set"] ) {
+    NSRange  r      = NSMakeRange(3,1);
+    NSString *first = [msg substringWithRange:r];
+    NSString *rest  = [msg substringFromIndex:4];
+    NSString *key   = nil;
+    first=[first lowercaseString];
+    key=[first stringByAppendingString:rest];
+    [self setObject:arg forKey:key];
+  } else {
+    id result=[self objectForKey:msg];
+    [inv setResult:&result];
+  }
+}
+...
 \end{lstlisting}
 \end{figure}
 
 
-For references, Figure~\ref{ui-widget-string-access} shows how KVC simplifies parametrized access for 
-the client:  instead of having to specify two messages, the getter and the setter, a single string key can be used with
-the two generic access methods.  The actual access mechanism is a little more complicated, but this is hidden and can 
-be reused.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.4,page=1]{ui-widget-generic-access-string.pdf}
-\caption{Widget using string identifiers for parametrized access}
-\label{ui-widget-string-access}
+\begin{enumerate}
+\item Provide cover methods for every key in the dictionary:  code duplication (and only feasible if fixed),
+	non-local implementation of a concern (Parnas).  
+\item Access the instance variables via keyed API:  slow
+\item Live with non-uniform access
+\item Do messaging/DNU tricks:  slow, need to do string processing
+\end{enumerate}
 
-\end{figure}
-
-Finally, evaluating string identifiers at run-time also imposes overhead.
-
-\subsection{References}
+Problems:
 
 
-Unlike strings, reified reference can be semantically rich and self-contained, 
-allowing variations without requiring a separate evaluator.
-Unlike messages they can encapsulate both read and write access in one entity.  
+\subsection{Parametrized access}
 
-Figure~\ref{ui-widget-valueholder} shows how a \emph{ValueHolder}~\cite{Woolf:1995:UUV:218662.218699} object,
-specifically an {\em AspectAdaptor} that
-references a specific attribute of the base object, reduces the entities the widget
-needs to interact with to one, from three in the case of message-based identifiers and two
-in the case of string-based identifiers.  How the ValueHolder accesses 
-its underlying data is completely hidden from clients, so different containers or access
-strategies can be substituted without having to modify client code.
+The previous example can be seen as a having to switch between built-in, identifier-based access and parametrized access via
+user-defined identifiers (in this case) strings.  Therefore, the same incompatibility also appears when we want to have both
+parametrized and identifier-based access.    (Matrix of  perform:  variants etc.)
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.4,page=1]{ui-widget-valueholder.pdf}
-\caption{Widget using ValueHolder for parametrized access}
-\label{ui-widget-valueholder}
+One problem is that even accesses that are, in fact, completely constant at compile-time then become dynamic and slow
+( s objectForKey:kSomeConstantIdentifier ).
 
-\end{figure}
-
-Listing~\ref{reified-identifiers} demonstrates the drawback of ValueHolders:  even greater complexity at the
-call site, making direct use impractical. 
+Matrix:      a[1] and a[i]  are both fast.   a.b is fast, but means something different, a.`b` doesn't work or a['b'] and a[b] (where b is a string) are both slow).
 
 
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=reified-identifiers,caption=Retrieve and store value via AspectAdaptor ValueHolder.]
-((AspectAdapter subject:deepThought) forAspect:#theAnswer) value.
-((AspectAdapter subject:deepThought) forAspect:#theAnswer) value:42.
-\end{lstlisting}
-\end{figure}
 
-Cocoa's {\tt NSURL} class is used to access resources referenced by URI and suffers from similar complexity
-of use at the call-site.  Listing~\ref{nsurl-flickr-draw}
-shows the complete process for drawing an image with a specific ID from flickr on a graphics context.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=nsurl-flickr-draw,caption=Retrieving and drawing an image stored on flickr.com.]
-flickrBase :=NSURL URLWithString:'http://static.flickr.com/2438/'.
-imageURL := NSURL URLWithString:'3559417932_7208103ed8_m.jpg'
-                  relativeToURL:flickrBase.
-imageData := NSData dataWithContentsOfURL:imageURL.
-context drawImage: (UIImage imageWithData:imageData).
-\end{lstlisting}
-\end{figure}
+\subsection{External resources}
 
 
-A final problem, apart from the loss of directness and expressiveness, is that we have now 
-duplicated the identifier lookup mechanism built into the language (see Figure~\ref{identifier-eval})
-in user space.  Such code duplication should be avoided, but we are prevented from applying refactoring
-to implement one in terms of the other by the fact that one is hard-wired into the language and the other is not.
 
-\subsection{Discussion}
 
-Although resource access is one of the most basic operations in a programming language, combining 
-the built-in implementations 
-with features we have come to expect from object-orientation such as encapsulation, polymorphic
-behavior and user-extensibility turns out to be difficult enough that developers resort to using
-strings as identifiers.
+\subsection{Composed stores}
 
-Using strings as identifiers does meet our basic goals of allowing changes, but suffers from
-code-bloat at the call sites, lack of interoperability and runtime evaluation overhead.  Reified 
-identifiers improve interoperability and can reduce overhead for reference use, but are 
-sufficiently cumbersome as to be unusable as direct identifiers.
 
-A solution would need to combine the expressiveness of direct references, the universality
-of polymorphic message sends with flexibility of string-based identifiers.
+\subsection{Problem Statement Summary}
+
 
 
 %-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
@@ -526,30 +450,8 @@ discussed in the previous section such as reifying the identifier lookup process
 to make it polymorphic, in addition to expanding identifier syntax to accommodate extension and 
 opening up the language for extension at this point  with open-implementation techniques~\cite{OpenImplementations}.
 
-The generalization from plain identifiers to Polymorphic Identifiers is similar to that from early-bound
-function calls to late-bound messages.
-
-Listing~\ref{polymorphic-identifier-examples} recasts the examples from Section~\ref{identifiers} using
-Polymorphic Identifiers.  Lines 1-2 refer to a local resource, lines 3-4 to attributes of an object or 
-entries in a dictionary, the syntax is the same.  Lines 5 introduces a custom scheme for the persistent
-user defaults, whereas lines 6-8 show file system access and lines 9-10 access to network resources.
 
 
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=polymorphic-identifier-examples,caption=Retrieve \mbox{[and store]} values via Polymorphic Identifiers.]
-theAnswer [ :=42 ].
-var:theAnswer [ :=42 ].
-var:deepThought/theAnswer [ := 42. ]
-var:aDictionary/theAnswer [ := 42.]
-defaults:theAnswer [ := 42 ].
-file:theAnswer.txt [ := 42 ].
-file:answerImage.png.
-img:pictureOf42.
-http://www.deepthought.com/theAnswer.
-ref:http://www.deepthought.com/theAnswer.
-\end{lstlisting}
-\end{figure}
 
 The syntax for accessing these different types of resources is identical, even if the actual
 names differ, and storing values into the resources is always accomplished using the assignment operator.
@@ -1217,7 +1119,7 @@ and finally a window with a live connection to the language learning game runnin
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[scale=0.32,page=1]{PolymorphicIdentifiersInUse.png}
+%\includegraphics[scale=0.32,page=1]{PolymorphicIdentifiersInUse.png}
 \caption{Polymorphic Identifiers in use}
 \label{pi-inuse}
 \end{figure}
