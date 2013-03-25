@@ -265,7 +265,7 @@ send message  & {\tt c = a.b();  }	 & { c =  [a b]; }		 \\\hline
 
 
 \subsection{User-defined storage implementations}
-
+\label{userdefined}
 Although language features supporting the UAP make it easy to substitute a single 
 instance variable with a pair of methods or vice versa, substituting custom stores,
 and doing so wholesale, is more difficult.
@@ -349,15 +349,17 @@ that the language's built in notations for access will no longer be used for int
 objects, rather {\tt objectForKey:} and {\tt setObject:forKey:} will now be used universally.  In addition
 to bloating client code and making it virtually unreadable, this also means having to implement
 the {\tt objectForKey:}/{\tt setObject:forKey:} methods for every object.  These methods are not just
-boilerplate that duplicates the already-existing property definitions, it is also more than an order
-of magnitude slower than the built-in access, and slower even than dictionary access.
+boilerplate that duplicates the already-existing property definitions, they are also more than an order
+of magnitude slower than the built-in access, and slower even than dictionary access.  This 
+performance overhead is imposed by the API, it cannot easily be removed by clever implementations.
 
-In combination, these aspects strongly discourage object-modeling, as just using dictionaries
-everywhere is not just less code, but also faster than introducing object-models.
+In combination, these aspects of this solution strongly discourage object-modeling, as just using 
+dictionaries everywhere is not just less code, but also faster than introducing objects.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=compatibility2,caption=Making a dictionary object-compatible.]
--(NSString*)name {
+-(NSString*)name
+{
     return [self objectForKey:@"name];
 }
 -(void)setName:(NSString*)newName
@@ -365,30 +367,42 @@ everywhere is not just less code, but also faster than introducing object-models
   [self setObject:newName forKey:@"name];
 }
 -(NSNumber*)age {
-    return [self objectForKey:@"age];
+    return [self objectForKey:@"age"];
 }
--(void)setAge:(NSNumber*)newAge
+-(void)setAge:(NSNumber*)newAge 
 {
-  [self setObject:newName forKey:@"age];
+  [self setObject:newName forKey:@"age"];
 }
 ...
 \end{lstlisting}
 \end{figure}
 
-Standardizing on property access and/or message sends keeps the interface clean and fast,
-with keyed lookups confined to the insides of objects.  
+The second option is to keep property access as the universal interface, mapping to dictionaries
+inside the object using cover methods as shown in Listing~\ref{compatibility2}.  The advantages
+of this approach are that we do no abandon the language-defined interface facilities and
+there is no performance overhead imposed by the API.  The disadvantage is obvious from
+Listing~\ref{compatibility2}:  introduction of duplicated boilerplate code on a massive scale.
+
+Although independent identifiable concerns are supposed to be isolated in a single module~\cite{Parnas72},
+and object-orientation is supposed to help us with this goal,
+this ``storage concern'' is now spread all over the code-base.  If we want to change storage
+from instance variables to dictionaries or back for a variety of objects, we must modify all
+the objects involved, introducing or removing these cover methods as needed. 
+
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=compatibility3,caption=Compatibility via forwardInvocation.]
--(void)forwardInvocation:(NSInvocation*)inv
+-(void)forwardInvocation:(NSInvocation*)inv 
 {
   SEL sel=[inv selector];
   NSString *msg=NSStringFromSelector( sel );
-  if ( [msg hasPrefix:"@"set"] ) {
+  if ( [msg hasPrefix:@"set"] ) {
     NSRange  r      = NSMakeRange(3,1);
     NSString *first = [msg substringWithRange:r];
     NSString *rest  = [msg substringFromIndex:4];
     NSString *key   = nil;
+    id arg=nil;
+    [inv getArgument:&arg atIndex:2];
     first=[first lowercaseString];
     key=[first stringByAppendingString:rest];
     [self setObject:arg forKey:key];
@@ -401,31 +415,144 @@ with keyed lookups confined to the insides of objects.
 \end{lstlisting}
 \end{figure}
 
+In dynamic languages, we have a third option, using the error handler invoked when a method
+is not found to simulate the cover methods without having to implement them, as shown
+in Listing~\ref{compatibility3}.   Although this approach does reduce the need to write
+cover methods for each individual attribute, it still needs to be implemented for every keyed
+access class or injected if injection facilities are available.  The fact that it must convert
+distinct message message names to keys via string processing not only makes it fragile,
+but also quite slow, at around three orders of magnitude slower than a plain message
+send accessing an attribute.
 
+Although we have shown three possible ways of honoring the UAP when dealing with custom
+attribute storage in Objective-C, all of them come with
+serious drawbacks, and so the fourth option is usually chosen:  simply live with non-uniform
+access for custom stores.
 
-\begin{enumerate}
-\item Provide cover methods for every key in the dictionary:  code duplication (and only feasible if fixed),
-	non-local implementation of a concern (Parnas).  
-\item Access the instance variables via keyed API:  slow
-\item Live with non-uniform access
-\item Do messaging/DNU tricks:  slow, need to do string processing
-\end{enumerate}
+Other object-oriented languages such as C\#, Scala, Python, Ruby, Eiffel, Java and Smalltalk,
+present the developer with the same tradeoffs, though details vary slightly and the dynamic
+message resolution technique from Listing~\ref{compatibility3} is only available in the dynamic
+languages. 
 
-Problems:
+In addition, the problems presented apply to any custom store, not just dictionaries,
+because any custom store has to identify the storage locations (\emph{L-Values}) to reference,
+so it has to translate from messages to \emph{L-Values} and back somehow.  These problems
+are particularly pervasive in persistence mechanisms 
+
+  Special 
+machinery is sometimes available to perform this translation for instance variables (in the form of 
+properties in C\#, Python and Objective-C, in the form of aliases in Eiffel and Scala and hidden
+in Self), but these mechanism only apply to instance variables, not to custom stores.
+
 
 
 \subsection{Parametrized access}
 
-The previous example can be seen as a having to switch between built-in, identifier-based access and parametrized access via
-user-defined identifiers (in this case) strings.  Therefore, the same incompatibility also appears when we want to have both
-parametrized and identifier-based access.    (Matrix of  perform:  variants etc.)
+Another source of non-uniformity is the difference between direct access, where the attribute
+to be accessed is known at compile time and present in the source code, and parametrized
+access, where the exact attribute is passed as a parameter at run time.  In fact, the 
+difficulties with custom stores 
 
-One problem is that even accesses that are, in fact, completely constant at compile-time then become dynamic and slow
-( s objectForKey:kSomeConstantIdentifier ).
+Table~\ref{direct-vs-parametrized}
+summarizes how read and write access to an attribute differs between direct and parametrized
+access in Objective-C.  Property access is the simplest, as there simply is no parametrized variant
+available.  Keyed access can use the same message format for indirect and direct access, and
+more crucially, the same key for both read and write access.  Message-based access, on the
+other hand, must not only switch from the direct messaging syntax to indirect {\tt perform:}
+messages, but also must provide two different message selectors, the read and the write
+selector (e.g. {\tt name} and {\tt setName:}).
 
-Matrix:      a[1] and a[i]  are both fast.   a.b is fast, but means something different, a.`b` doesn't work or a['b'] and a[b] (where b is a string) are both slow).
+\begin{table*}[htbp]
+\center
+\begin{tabular}{|r|c|c|} \hline
+   &  direct	 & parametrized  		 \\\hline 
+property read 	 &   {\tt person.name;  }	&  -	 \\\hline 
+property write 	 & {\tt person.name=newName; }	 & -		 \\\hline 
+message read 	 &  {\tt  [person name]; }	 & {\tt [person perform:readAttrSel]; }		 \\\hline 
+message write 	 & {\tt  [person setName:newName]; }	 & {\tt [person perform:writeAttrSel with:newName]; }		 \\\hline 
+keyed read  & {\tt [person objectForKey:@"name"]; }	 & {\tt [person objectForKey:anAttribute];  }  \\\hline 
+keyed write  & {\tt [person setObject:newName forKey:@"name"]; }	 & {\tt [person setObject:newName forKey:anAttribute]; }		 \\\hline 
+\end{tabular}
+\caption{Direct vs. parametrized access}
+\label{direct-vs-parametrized}
+\end{table*}
 
 
+In order to have parametrized read/write access to an attribute, we again seem to have effectively
+three options:
+
+\begin{enumerate}
+\item Use dictionaries exclusively when parametrized access is required
+\item Map a keyed API to message-sends dynamically (Option 2 of Section~\ref{userdefined}).
+\item Implement an ``L-Value Reference'' object that either captures or dynamically derives 
+	the two message required to access the specified attribute relative to an object.
+\end{enumerate}
+
+
+Option 1 leads to either non-uniform access or standardizing on dictionaries and foregoing 
+object-oriented modeling.   It also means that even direct access, with all values known
+at compile-time, must use the same run time access path, with the order-of-magnitude
+performance penalty.
+ 
+Option 2 is an option, but due to the negative performance
+consequences we looked at in
+Section~\ref{userdefined} not a good one.   Option 3,  performing the computation of the selectors
+in an object and reusing that object has the potential of being much faster. 
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=valueacessor,caption=Class encapsulating message-based attribute access.]
+@interface ValueAccessor : MPWObject
+{
+  id target;
+  NSString *attributeName;
+  SEL         getSelector,putSelector;
+}
+@property (strong) NSString *attributeName;
+-initWithTarget:aTarget attribute:(NSString*)attrName;
+-value;
+-(void)setValue:
+@end
+@implementation ValueAccessor
+@synthesize attributeName;
+-initWithTarget:aTarget attribute:(NSString*)attrName
+{
+  self=[super init];
+  getSelector=NSSelectorFromString( attrName );
+  NSString *setName=[attrName capitalizedString];
+  setName=[setName stringByAppendingString:@":"];
+  setName=[@"set" stringByAppendingString:setName];
+  putSelector=NSSelectorFromString( setName );
+  return self;
+}
+-value
+{
+  return [self perform:getSelector];
+}
+-(void)setValue:newValue
+{
+  [self perform:setSelector with:newValue];
+}
+\end{lstlisting}
+\end{figure}
+
+A {\tt ValueAccessor} class implementing this idea is shown in Listing~\ref{valueacessor}.  However, 
+as demonstrated in Listing~\ref{valueacessoruse}, using this
+{\tt ValueAccessor} class is significantly more verbose and less convenient than just using the 
+direct keyed access method of Option 2.  So again, although we do have options for indirect
+access, none of the options are particularly good as is.
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=valueacessoruse,caption=Keyed access vs. using a ValueAccessor]
+a = [person objectForKey:@"name];
+id valueAccessor = [ValueAccessor alloc]
+           initWithTarget:person 
+           attributeName:@"name"];
+a = [valueAccessor value];
+\end{lstlisting}
+\end{figure}
+
+\mpw{what about the perf problem with keyed access}
 
 \subsection{External resources}
 
