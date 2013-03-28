@@ -111,7 +111,7 @@
 \begin{document}
 %\fontsize{9.7}{12}\rm
 
-\linespread{0.9}
+%\linespread{0.9}
 
 \conferenceinfo{SPLASH 2013}{date, City.} 
 \copyrightyear{2013} 
@@ -504,7 +504,7 @@ three options:
 
 \begin{enumerate}
 \item Use dictionaries or another keyed store exclusively when parametrized access is required
-\item Map a keyed API to message-sends dynamically (Option 2 of Section~\ref{userdefined}).
+\item Map a keyed API to message-sends dynamically (option 2 of section~\ref{userdefined}).
 \item Implement an ``L-Value Reference'' object that either captures or dynamically derives 
 	the two message required to access the specified attribute relative to an object.
 \end{enumerate}
@@ -517,7 +517,7 @@ performance penalty.
  
 Option 2 is an option, but due to the negative performance
 consequences we looked at in
-Section~\ref{userdefined} not a good one.   Option 3,  performing the computation of the selectors
+section~\ref{userdefined} not a good one.   Option 3,  performing the computation of the selectors
 in an object and reusing that object has the potential of being much faster. 
 
 \begin{figure}[htbp]
@@ -563,12 +563,11 @@ direct keyed access method of option 2.  This means that it is unlikely to be us
 setting, so transformation from direct to parametrized use implies a large change in client code.
 
 In addition, we have to take into account the findings from
-Section~\ref{userdefined}, which concluded that we are likely to not have uniform access based on
+section~\ref{userdefined}, which concluded that we are likely to not have uniform access based on
 messages only, which option 3 relies on.  
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=valueaccessoruse,caption=Keyed access vs. using a ValueAccessor]
-a = [person objectForKey:@"name];
 id valueAccessor = [[ValueAccessor alloc]
            initWithTarget:person 
            attributeName:@"name"];
@@ -589,7 +588,7 @@ for example Apple's Pages DTP application has 3.9MB of compiled code,
 but 250MB of non-code resources in 18792 files (not counting frameworks), and
 mobile applications are often just thin wrappers around web-resources accessible
 via HTTP~\cite{http}.  However, API and language support
-for abstracting over such resources is limited.  In a way that is similar to the custom stores we looked at in Section~\ref{userdefined}, languages make it difficult to create APIs that separate concerns
+for abstracting over such resources is limited.  In a way that is similar to the custom stores we looked at in section~\ref{userdefined}, languages make it difficult to create APIs that separate concerns
 and respect the UAP.
 
 Listing~\ref{imagefromfile} shows loading an image file from a file using a convenience
@@ -690,7 +689,7 @@ instances.
 However, as {\tt resource[@"button.png"]} is still syntactically different from {\tt [resource button]},
 our solution does not conform the UAP, so if we decide to compute the button image instead
 of using a pre-rendered version, we still need to change client code.   We have the same three options  discussed
-in Section~\ref{userdefined} for bridging
+in section~\ref{userdefined} for bridging
 the gap:  (1) standardize on dictionary syntax, (2) create individual cover methods or
 (3) use a message error handler.  
 
@@ -776,7 +775,7 @@ in order to support partially varying identifiers with dynamically evaluated com
 For a programming language, URI syntax is a somewhat unusual as it uses the forward slash ('/')
 character as a path delimiter, whereas most programming languages prefer the dot ('.').  However,
 it makes it easy to integrate both external and internal resources with a common syntax, as shown 
-in Figure~\ref{validpis}.
+in Fig.~\ref{validpis}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=validpis,caption=Valid Polymorphic Identifiers]
@@ -797,7 +796,7 @@ expressible as URIs.
 
 References are the expression of Strachey's Load Update Pair within the Polymorphic
 Identifier system, they mediate access to a specific L-Value.  Similar to the {\tt ValueAccessor}
-class presented in Section~\ref{parametrized}, they hide variations in access mechanics from
+class presented in section~\ref{parametrized}, they hide variations in access mechanics from
 clients, but due to compiler support without negative impacts in usability or performance. 
 References can also be exposed to the user for generic indirect/parametrized access, with
 the potential for store-specific behavior.
@@ -854,7 +853,7 @@ compile time, compiling away any overhead.
 
 The generic interface to arbitrary L-Values that are References can also be 
 exposed to user programs to fill the need for parametrized references we
-discussed in Section~\ref{parametrized}.  Listing~\ref{referenceuse} shows
+discussed in section~\ref{parametrized}.  Listing~\ref{referenceuse} shows
 example use of a reference that is the equivalent of Listing~\ref{valueaccessoruse}.
 
 \begin{figure}[htbp]
@@ -938,7 +937,7 @@ a general framework for making resource access more uniform.
 \label{inmemory}
 
 Although adding file and web references as integrated, first class objects to a programming
-language is useful, it solves only parts of the problems from Section~\ref{nonuniform}.
+language is useful, it solves only parts of the problems from section~\ref{nonuniform}.
 In addition, we also wish to integrate classical variable and attribute access.
 
 In-memory stores such as the local execution context (often the stack), object instance
@@ -1020,7 +1019,7 @@ such a filter.
 \emph{Sequential schemes} were already introduced in the previous section when defining
 the {\tt var:} scheme, they just search a number of base schemes for the L-Value in question.
 A \emph{caching scheme} also scans two base schemes sequentially, but deposits any 
-values found in the scheme scanned first.  Figure~\ref{fig:http-cached} shows how multiple
+values found in the scheme scanned first.  Fig.~\ref{fig:http-cached} shows how multiple
 caching schemes can be combined with file and memory stores and an actual {\tt HTTP}
 protocol handler handlers to construct an {\tt http:} scheme-handler that caches retrieved
 resources both on disk and in memory.
@@ -1041,18 +1040,107 @@ a general purpose programming language.
 \section{Evaluation}
 \label{evaluation}
 
-Hello before table
+Having introduced Polymorphic Identifiers, we must now show whether they solve the
+problems we had in section~\ref{nonuniform} implementing the Uniform Access Principle,
+particularly if we can provide uniform access to custom stores without requiring code-bloat
+at either the call site or the called object.  In addition, it should be possible to integrate
+references to external files, abstracting from specific location and media types.  Finally,
+all this should be accomplished without major impacts to performance.
 
-\csvautotabular{kvcvar.csv}
+First, let's look at substituting a dictionary with an object or vice versa.  Listing~\ref{objdictpi} 
+shows how to access the {\tt name} property of an object or a dictionary using Polymorphic
+Identifiers.  The access syntax is the same, because the {\tt var:} scheme handler uses 
+the {\tt Reference} class we showed earlier that uses messaging or keyed access 
+transparently.
 
-Hello after table
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=pidictobj,caption=Accessing a dictionary or object via PI.]
+name := var:person/name 
+var:person/name := newName.
+\end{lstlisting}
+\end{figure}
+
+We already showed how to provide a reference to an object via the {\tt ref:} scheme, so
+getting a reference to the {\tt person} object is as simple as {\tt valueRef := ref:person}, which
+is significantly less code to write than the code in Listing~\ref{valueaccessoruse}.  As before,
+this uses the {\tt Reference} class to perform the access, so it works with both keyed access
+and messaging.
+
+External resources are slightly more challenging.  We could use {\tt button := http://www.example.com/button.png}, but that actually still encodes path information.  Better to create a {\tt image:} relative
+scheme pointing to {\tt http://www.example.com}.  With that, we refer to the button as {\tt image:button.png},
+which is much easier to point to another location, for example by initializing the {\tt image:} scheme
+with a file path.  Furthermore, the {image:} scheme should also probably include a filter that converts
+PNG image data to image objects, so the object retrieved with {\tt image:button.png} is directly
+usable.  Finally, we can add another filter that automatically adds the file extension, leaving
+the identifier {\tt image:button}.   With these few simple steps, we have not only made 
+the original image reference more compact and expressive, we have also abstracted from
+the data source, format and location sufficiently that we can replace the file retrieval with
+a computation if we want to do so.
+
+Using Polymorphic Identifiers to access resources makes conformance to the UAP automatic
+for in-memory stores such as objects and dictionaries, independent of whether access is
+direct or parametrized, and without trade-offs in terms of duplicated boilerplate code. Although
+not quite as automatic as the in-memory stores, PIs also make external resources such as 
+files accessible to the UAP with very little effort.  
+
+\subsection{Performance}
+
+In addition to duplicated boilerplate code, one of the problems with the methods for achieving
+uniform access in section~\ref{nonuniform} was performance.  Table~\ref{perftable1} compares 
+the performance of the different methods for compensating the differences between a dictionary
+as a custom store and an object using native instance variables and messages to access them.
+
+Each column of table~\ref{perftable1} represents one (uniform) access method, with the rows being the
+underlying stores that are being accessed.   Times are reported in nanoseconds per access.
+Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor, the
+code was self-timing using the {\tt getrusage()} call and an automatically adjusted iteration
+count that ensures each test runs for at least 1/10th of a second.  Three runs were averaged.
+
+
+\begin{table}
+\center
+\csvautotabular{polymorphic-ids-vs-msg-keys.csv}
+\label{perftable1}
+\caption{Performance of different methods for }
+\end{table}
+
+The \emph{Message} column shows the times for using messages or properties to access, so 
+{\tt person.name} for the name property of the person objects.  This access methods is native
+for the object but requires cover methods for the dictionary.  Although the native message access is
+the fastest time overall and the additional time-overhead for the cover methods when storage
+is custom is small, the additional boilerplate code of the cover methods makes this approach
+untenable.
+
+The \emph{Keyed} column shows the times for keyed access, which is native for the dictionary
+but requires a cover method mapping keys to messages for the object.  As noted earlier,
+keyed access for object-based storage is actually 2x slower than pure dictionary access and
+20x slower than native object access, so using keyed access is not tenable from a performance
+point of view.
+
+The \emph{PI} column shows the performance of Polymorphic Identifiers.  While PIs are slower
+than message based access, the performance overhead is only 27\% for message storage and
+19\% for dictionary based storage.
+
+The other alternative for unifying access via messaging, using the {\tt forwardInvoction} takes
+over 2 microseconds for the case of underlying dictionary storage so isn't a viable option.  It
+is also left out of Fig.~\ref{piperfgraph1} comparing the results visually.  In fact, 2 microseconds
+is sufficiently slow that it is the only access method that has a noticeable impact on small file
+operations, adding more than 25\% to the time for a cached read of a 36KB file.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[scale=0.50,page=2]{polymorphic-ids-vs-msg-keys.pdf}
+\caption{Performance }
+\label{piperfgraph1}
+\end{figure}
+
 
 
 \subsection{Applications}
 
 In addition to scripting tasks using {\tt stsh}, Polymorphic Identifiers have been used in a number
 of applications, ranging from an iPad language learning game, the site generator that produces the {\tt objective.st} web-site to a
-live remote IDE that uses HTTP to upload code and download debug information from running processes.  Figure~\ref{pi-inuse}
+live remote IDE that uses HTTP to upload code and download debug information from running processes.  Fig.~\ref{pi-inuse}
 has three IDE windows that show, respectively, the setup code for the web-site, the part of the IDE code itself that uploads new method definitions,
 and finally a window with a live connection to the language learning game running on the iOS simulator in the background.
 
@@ -1073,57 +1161,7 @@ The application that gained most from Polymorphic Identifiers was the site gener
 content, templating mechanism, dynamic content and a page cache could be directly expressed as a series of connected
 scheme-handlers.  The object that dynamically generates the site's root is placed there using the simple assignment: {\tt dynamic:/  := MPWMainPage \dots}.
 
-
-\subsection{Performance}
-
-Like plain identifiers and messages, Polymorphic Identifiers benefit from having the compiler perform
-at least the character-to-reference conversion step of identifier lookup, yielding performance 
-improvements over string-based identifiers.
-
-\sloppy
-Figure~\ref{var-speed} compares evaluating the identifier {\tt var:stream/target/target} with evaluating the  
-equivalent string-based identifier (using Cocoa KVC): \\  { \centering {\tt [stream valueForKeyPath:@"target.target"]}. }
-\fussy
-
-We use the underlying Objective-C implementation for both the reference and its 
-comparison because Objective-Smalltalk is currently an interpreted environment with
-a simple AST-walker, so interpretation overhead makes performance differences in
-the underlying lookup disappear.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor, the
-code was self-timing using the {\tt getrusage()} call.  
-
-%\vspace{-4.0em}
-\begin{figure}
-%  \centering
-\begin{minipage}[c]{0.38\textwidth}
-\begin{tabular}{|r|r|r|r|r|r|r|r|r|r|r|r|} \hline
-Accesses  & KVC& {\tt var:}   & ratio	\\ 
- & ($\mu$s) & ($\mu$s) & \\ \hline
-1 & 14 & 10 & 1.4   \\ % \hline
-10 & 22 & 10 &   2.2 \\   % \hline
-100 & 100 & 14 &  7.0\\   % \hline
-1000 & 1227 & 29 &  42.3  \\  % \hline
-10000 & 8345 & 186 &   44.9 \\   % \hline
-100000 & 73036 & 1730 &    42.2 \\ \hline
-\end{tabular}
-\end{minipage}
-\begin{minipage}[c]{0.39\textwidth}
-\includegraphics[scale=0.5,page=2]{kvc-vs-var.pdf}
-\end{minipage}
-\vspace{-2.0em}
-\caption{Time for  {\tt var:} scheme vs. \emph{Key Value Coding} for two-element path access, log scale}
-\label{var-speed}
-\end{figure}
-
-For large number of operations, access via the {\tt var:} scheme (or more precisely its reference) is
-around 40 times faster than using Key Value Coding, confirming our expectations about the benefits
-of partial compile-time evaluation versus string-interpretation at run-time.  
-
-In order to test the overhead of scheme-handlers, especially composite scheme-handlers, we turn
-to the ability to bridge scheme-handlers to servers briefly mentioned in Section~\ref{common-reference-behavior}.
-We exported three different schemes via http and then used the {\tt wrk} http-performance testing tool to stress
-test the resulting http servers, using apache as a benchmark to validate our results.  Tests were run on a 2012 MacBook Pro 13" with 2.9 GHz Core i7 processor.
-
-Figure~\ref{http-server-speed} shows the results.  Serving a specific directory using a relative scheme parametrized
+Fig.~\ref{http-server-speed} shows the results.  Serving a specific directory using a relative scheme parametrized
 with the file scheme resulted in a performance level of around 19K requests per second.  Adding the same memory cache
 we used for the caching http client scheme improves performance to 23K requests per second and finally exporting a pure
 memory scheme yields the best performance at 31K requests per second.   Apache has many more features and so
@@ -1156,7 +1194,7 @@ memory-scheme (only) &  31491  \\ \hline
 \label{related-work}
 
 
-We already saw in Section~\ref{direct-reference} that messaging can be used for resource
+We already saw in section~\ref{direct-reference} that messaging can be used for resource
 access in lieu of plain identifiers.  Self~\cite{UngarS87} and Newspeak~\cite{Bracha:2010:MON:1883978.1884007} take this
 approach to its logical conclusion by making all identifiers message-sends and therefore late-bound, eliminating
 all nouns and replacing them with verbs\footnote{Literals are the exception}.  Although
