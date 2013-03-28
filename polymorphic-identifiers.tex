@@ -750,7 +750,7 @@ The Polymorphic Identifier approach consists of three basic parts:
 \item \emph{Polymorphic Identifiers} themselves are URIs\footnote{Other syntax variants such as dot notation should also work.}, with the scheme-part of the URI designating the actual scheme handler.
 	
 \item \emph{References} are created and used transparently by the run-time and compiler
-	to mediate access to s specific L-Value identified by a \emph{Polymorphic Identifier}.
+	to mediate access to a specific L-Value identified by a \emph{Polymorphic Identifier}.
 	They correspond to the LUP in Strachey's model.  
 
 \item \emph{Scheme-handlers} each manage a single store, a set of L-Values.  Scheme-handlers 
@@ -760,25 +760,23 @@ The Polymorphic Identifier approach consists of three basic parts:
 \end{enumerate}
 
 Programming languages already support the notion of multiple stores.  Even in C, the identifier {\tt a}
-can mean lookup in the local variables of a procedure, which could be in registers, or a global
+can mean a local variables of a procedure, which could be in registers, or a global
 variable stored in memory at a specific address.  With OO languages, {\tt a.b} can be direct
 access to the instance variable {\tt b} of object {\tt a}, or it can mean calling a method aliased
 to that identifier.  Polymorphic Identifiers regularize and generalize these ad-hoc mechanisms.
 
 \subsection{URI syntax}
 
-
-
 The PI conceptual model maps almost perfectly to URI syntax and semantics, with the \emph{scheme}
 part of the URI designating a store and the URI representing an L-Value with polymorphic read
 and update operations ({\tt GET} and {\tt PUT} in HTTP).  PIs bring URIs into the language, with
 compiler and runtime support.  In addition to basic URI syntax, we also support URI templates~\cite{rfc6570}
-in order to support partially varying identifiers.
+in order to support partially varying identifiers with dynamically evaluated components.
 
 For a programming language, URI syntax is a somewhat unusual as it uses the forward slash ('/')
 character as a path delimiter, whereas most programming languages prefer the dot ('.').  However,
 it makes it easy to integrate both external and internal resources with a common syntax, as shown 
-in Figure~\ref{validpis}.  
+in Figure~\ref{validpis}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=validpis,caption=Valid Polymorphic Identifiers]
@@ -912,8 +910,15 @@ storage or transport or one performing additional actions before sending an HTTP
 we will use default scheme-bindings to refer to scheme-handlers for the remainder 
 to ease the exposition.
 
+
 Listing~\ref{download-to-file} shows how a web-resource can be downloaded to a file
-or updated from a string literal using plain assignment syntax.  
+or updated from a string literal using plain assignment syntax.  This type of compact
+syntax for dealing with files or web resources is usually reserved for scripting languages 
+such as the Bourne shell.  In fact, Objective-Smalltalk is used with minor modifications as a
+Unix shell and scripting language. Expressions such as {\tt file:\{env:HOME\}/rfcs/\{rfcName\}},
+which resolves to an RFC specified in the variable {\tt rfcName} located in the {\tt rfcs}
+subdirectory of the user's home directory, are very close to the expressiveness (and obscurity)
+of the equivalent Bourne shell expression: {\tt \$HOME/rfcs/\$rfcName}.
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=download-to-file,caption=Downloading an RFC to a file.]
@@ -923,13 +928,17 @@ http://datatracker.ietf.org/doc/rfc1738:='New RFC'.
 \end{figure}
 
 
+Polymorphic Identifiers bring compact, shell-like expressiveness for file and web access
+to a general purpose programming language not as special-cases, but rather as part of 
+a general framework for making resource access more uniform.
+
 
 \subsubsection{In-memory stores}
 
 \label{inmemory}
 
 Although adding file and web references as integrated, first class objects to a programming
-language is useful, it solves only parts of the problems from Section~\ref{identifiers}.
+language is useful, it solves only parts of the problems from Section~\ref{nonuniform}.
 In addition, we also wish to integrate classical variable and attribute access.
 
 In-memory stores such as the local execution context (often the stack), object instance
@@ -945,19 +954,18 @@ thread:deepThought/privateAnswer := local:tempAnswer.
 \end{lstlisting}
 \end{figure}
 
-These schemes allow path-based access
-that is mediated by the objects in question.   Each object / class is asked at least
-once for access to an attribute and then returns a reference.   This reference can
-use message sending, keyed access or even a direct offset for very fast
-access without requiring a JIT compiler.
+These schemes allow path-based access that is mediated by the objects in question. 
+They return references of the type shown in Listing~\ref{referenceclass} that can
+be used for keyed or message-based access or even for accessing directly
+via an offset into the object.
 
 There is also a {\tt global:} scheme for globals and a {\tt class:} scheme that separates
 the namespace for instances from that for classes.  Having separate schemes for
 these different storage classes is useful when wanting to disambiguate,
 but can become cumbersome in itself.  To alleviate this, the composite
 {\tt var:} scheme combines these schemes into a single namespace
-with prioritized lookup similar to conventional languages.  We will take
-a close look at composite schemes in the next section.  
+with prioritized lookup similar to conventional languages.  
+
 
 The {\tt var} scheme is also usually bound as the resolver for the {\tt default}
 scheme, which is assigned to identifiers that do not specify their scheme.
@@ -975,17 +983,59 @@ A further scheme-handler that is not pre-loaded but available for defining
 custom schemes is the {\tt SiteMap}.  A {\tt SiteMap} stores arbitrary objects
 in memory in a tree structure that acts a bit like a memory filesystem.
 
+\subsubsection{Composite scheme-handlers}
+
+In addition to the flexible mapping of scheme names to scheme-handlers discussed
+earlier, composite schemes provide another means of abstracting from the specifics 
+of storage and providing a uniform interface that hides implementation details such
+as location, representation or access patterns.  Composite schemes never provide
+their own storage, but rather mediate access to one or more underlying \emph{base schemes}.
+
+A \emph{relative scheme} modifies access to its base scheme by making
+access relative to a base URI, almost exactly like the {\tt Resourcer} class 
+in Listing~\ref{resourcer}.  Listing~\ref{rfc-scheme} shows the definition
+of an {\tt rfc:} scheme that points to the IETF web-site.   With this scheme mapping in place,
+programs can refer to individual RFCs using the identifier {\tt  rfc:rfc2396}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
+base := ref:http://datatracker.ietf.org/doc .
+scheme:rfc:=RelativeScheme schemeWithBase: base.
+\end{lstlisting}
+\end{figure}
+
+Relative schemes are
+the basis for decoupling application-level intent from specific resource implementations
+and most schemes in use in a program will be user-defined schemes that at
+some point resolve to a base scheme via a relative scheme. 
 
 
-\begin{itemize}
-\item var-scheme, ivar, local-var, default-scheme
-\item external: file, http, (smb, FTP, ...)
-\item composites:  sequential, cache, relative, 
+Rather than modifying the identifier, a \emph{filter scheme} modifies the data coming
+from or going to its base scheme, similar to stacked filesystem that provide transparent
+encryption or compression services.  The {\tt Mapper} class mentioned earlier that 
+deserializes raw bytes into application-specific objects based on their MIME type 
+and a user-defined table mapping MIME types to classes is a prime candidate for
+such a filter.  
 
-\end{itemize}
+\emph{Sequential schemes} were already introduced in the previous section when defining
+the {\tt var:} scheme, they just search a number of base schemes for the L-Value in question.
+A \emph{caching scheme} also scans two base schemes sequentially, but deposits any 
+values found in the scheme scanned first.  Figure~\ref{fig:http-cached} shows how multiple
+caching schemes can be combined with file and memory stores and an actual {\tt HTTP}
+protocol handler handlers to construct an {\tt http:} scheme-handler that caches retrieved
+resources both on disk and in memory.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[scale=0.36,page=1]{cached-http.pdf}
+\caption{{\tt http:} scheme-handler with caching, composed from simpler schemes}
+\label{fig:http-cached}
+\end{figure}
 
-Similar to the {\tt Resourcer} class like the one shown in Listing~\ref{resourcer}.
+Composite scheme-handlers make it possible to abstract from many details of storage
+such as location, optimized access mechanisms and data formats while at the same
+time enabling expressiveness very similar to specialized scripting languages in
+a general purpose programming language.
 
 
 \section{Evaluation}
@@ -1006,12 +1056,12 @@ live remote IDE that uses HTTP to upload code and download debug information fro
 has three IDE windows that show, respectively, the setup code for the web-site, the part of the IDE code itself that uploads new method definitions,
 and finally a window with a live connection to the language learning game running on the iOS simulator in the background.
 
-\begin{figure}[htbp]
+\begin{figure*}[htbp]
 \centering
-%\includegraphics[scale=0.32,page=1]{PolymorphicIdentifiersInUse.png}
+\includegraphics[scale=0.50,page=1]{PolymorphicIdentifiersInUse.png}
 \caption{Polymorphic Identifiers in use}
 \label{pi-inuse}
-\end{figure}
+\end{figure*}
 
 
 The game has a large number of graphical assets that could be used much more simply in code by using special schemes for accessing app
