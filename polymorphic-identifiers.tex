@@ -12,6 +12,7 @@
 
 \documentclass[preprint]{sigplanconf}
 
+\usepackage{csvsimple}
 \usepackage{ifthen}
 \usepackage{pifont}
 %\usepackage[small,compact]{titlesec}
@@ -520,7 +521,7 @@ Section~\ref{userdefined} not a good one.   Option 3,  performing the computatio
 in an object and reusing that object has the potential of being much faster. 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=valueacessor,caption=Class encapsulating message-based attribute access.]
+\begin{lstlisting}[style=numbers,label=valueaccessor,caption=Class encapsulating message-based attribute access.]
 @interface ValueAccessor : MPWObject
 {
   id target;
@@ -555,8 +556,8 @@ in an object and reusing that object has the potential of being much faster.
 \end{lstlisting}
 \end{figure}
 
-A {\tt ValueAccessor} class implementing this idea is shown in Listing~\ref{valueacessor}.  However, 
-as demonstrated in Listing~\ref{valueacessoruse}, using this
+A {\tt ValueAccessor} class implementing this idea is shown in Listing~\ref{valueaccessor}.  However, 
+as demonstrated in Listing~\ref{valueaccessoruse}, using this
 {\tt ValueAccessor} class is significantly more verbose and less convenient than just using the 
 direct keyed access method of option 2.  This means that it is unlikely to be used in a direct-use
 setting, so transformation from direct to parametrized use implies a large change in client code.
@@ -566,7 +567,7 @@ Section~\ref{userdefined}, which concluded that we are likely to not have unifor
 messages only, which option 3 relies on.  
 
 \begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=valueacessoruse,caption=Keyed access vs. using a ValueAccessor]
+\begin{lstlisting}[style=numbers,label=valueaccessoruse,caption=Keyed access vs. using a ValueAccessor]
 a = [person objectForKey:@"name];
 id valueAccessor = [[ValueAccessor alloc]
            initWithTarget:person 
@@ -738,148 +739,181 @@ computation promised by the UAP from built-in instance variable storage
 to user-defined stores including the filesystem and remote storages such
 as the web.
 
-
-
-
-Polymorphic Identifiers generalize direct references by combining the techniques for resource access
-discussed in the previous section such as reifying the identifier lookup process and using messaging 
-to make it polymorphic, in addition to expanding identifier syntax to accommodate extension and 
-opening up the language for extension at this point  with open-implementation techniques~\cite{OpenImplementations}.
-
-
-
-
-The syntax for accessing these different types of resources is identical, even if the actual
-names differ, and storing values into the resources is always accomplished using the assignment operator.
-As it is possible to (re-)bind scheme names to existing or new schemes, all these different access 
-mechanism are interoperable and can be substituted for one another.
+Conceptually, Polymorphic Identifiers add multiple, user-defined stores each with their
+own kind of L-Values and associated identifiers.  The built-in stores such
+as instance variables fit within this framework but do not have special
+status.  Each store defines its own kind of Load Update Pair (LUP)~\cite{StracheyFund},
+rather than having such pairs defined for each individual L-Value.
 
 The Polymorphic Identifier approach consists of three basic parts:
 \begin{enumerate}
-\item \emph{Polymorphic Identifiers} themselves are URIs\footnote{Other syntax variants such as dot notation should also work.}.
-	  They are typically created by the 
-	compiler and have a structured runtime representation that can be manipulated
-	at a semantic level rather than as character strings, so consistency can be 
-	maintained.
-\item \emph{Scheme-handlers} manage a set of resources and, when registered,
-	 the namespace that is associated
-	with them.  They primarily turn \emph{Polymorphic Identifiers} into \emph{references} and
-	are created by developers, with a basic set provided by the environment.
+\item \emph{Polymorphic Identifiers} themselves are URIs\footnote{Other syntax variants such as dot notation should also work.}, with the scheme-part of the URI designating the actual scheme handler.
+	
 \item \emph{References} are created and used transparently by the run-time and compiler
-	to mediate access to the specific resource identified by a \emph{Polymorphic Identifier}.
+	to mediate access to s specific L-Value identified by a \emph{Polymorphic Identifier}.
+	They correspond to the LUP in Strachey's model.  
+
+\item \emph{Scheme-handlers} each manage a single store, a set of L-Values.  Scheme-handlers 
+	translate from identifiers to references.
 	
 	
 \end{enumerate}
 
-All three elements are plain objects that only become part of the language when registered
-with the compiler or runtime.
+Programming languages already support the notion of multiple stores.  Even in C, the identifier {\tt a}
+can mean lookup in the local variables of a procedure, which could be in registers, or a global
+variable stored in memory at a specific address.  With OO languages, {\tt a.b} can be direct
+access to the instance variable {\tt b} of object {\tt a}, or it can mean calling a method aliased
+to that identifier.  Polymorphic Identifiers regularize and generalize these ad-hoc mechanisms.
 
-Figure~\ref{scheme-eval} shows the generic identifier lookup of Figure~\ref{identifier-eval}
-extended to Polymorphic Identifiers.  The basic mechanism is still the same except for the
-addition of \emph{scheme-handlers} mediating the lookup process.  The left hand side of the
-diagram corresponds to the lookup in Figure~\ref{identifier-eval}, with the difference that
-the lookup that was previously hardwired into the language is now mediated by the {\tt var}
-scheme-handler, which in turn was selected by the {\tt var} scheme that's part of the 
-Polymorphic Identifier.
+\subsection{URI syntax}
 
+
+
+The PI conceptual model maps almost perfectly to URI syntax and semantics, with the \emph{scheme}
+part of the URI designating a store and the URI representing an L-Value with polymorphic read
+and update operations ({\tt GET} and {\tt PUT} in HTTP).  PIs bring URIs into the language, with
+compiler and runtime support.  In addition to basic URI syntax, we also support URI templates~\cite{rfc6570}
+in order to support partially varying identifiers.
+
+For a programming language, URI syntax is a somewhat unusual as it uses the forward slash ('/')
+character as a path delimiter, whereas most programming languages prefer the dot ('.').  However,
+it makes it easy to integrate both external and internal resources with a common syntax, as shown 
+in Figure~\ref{validpis}.  
 
 \begin{figure}[htbp]
-\centering\includegraphics[scale=0.45,page=1]{scheme-evaluation.pdf}
-\caption{Polymorphic Identifier lookup from two schemes}
-\label{scheme-eval}
-\end{figure}
-
-
-The right hand side of Figure~\ref{scheme-eval} shows fetching of a web-resource from
-a remote server following the same four step lookup process, with the following steps:
-
-\begin{enumerate}
-\item a character sequence is turned into a Polymorphic Identifier,
-\item the scheme part of the polymorphic handler is used to select a scheme-handler, in this case the {\tt http} handler,
-\item the scheme-handler evaluates the \emph{scheme-specific} part of the Polymorphic Identifier ({\tt //deepThought.org/theAnswer})
-	 and returns a reference, in this case a web-reference,
-\item this (web-)reference mediates access to the actual resource, in this case translating requests to store or retrieve the 
-	resource into HTTP GET or PUT requests via an http client library.
-\end{enumerate}
-
-These four steps can happen at compile-time or run-time and can be partially completed.
-A reference to a local stack variable, for example, will typically have none of the
-three components visible at run time, with all that remains being optimized 
-machine code to directly access the resource (the stack variable).
-A file or web-reference, on the other hand, will typically have the Polymorphic Identifier itself
-compiled, with evaluation deferred until runtime.  Finally, there are facilities
-for turning strings into Polymorphic Identifiers at runtime.
-
-
-\section{Schemes and scheme-handlers}
-\label{schemes}
-The addition of \emph{schemes} to identifiers in order to distinguish different kinds of resources
-and resource access represents
-the major addition that \emph{Polymorphic Identifiers} bring to a programming language.
-Each scheme is backed by a \emph{scheme-handler}.  Scheme-handlers broadly fall into two categories:
- \emph{primitive schemes} (Section~\ref{primitiveSchemes})
-directly encapsulate access to some sort of resource, while \emph{composite schemes} (Section~\ref{compositeSchemes})
-can be used to build new schemes out of existing schemes, forming a scheme algebra.
-
-\sloppy   % FIXME
-
-Scheme-handlers are represented by normal objects that respond to a well-defined protocol 
-accessible by user level code.  They
-become part of the language by binding them to a particular scheme, after which
-all \emph{Polymorphic Identifiers} with that scheme will be resolved using that particular scheme-handler.
-The {\tt scheme:} scheme manages the mapping of scheme-names to scheme-handlers, so the code 
-{\tt scheme:http := URLSchemeResolver scheme} binds an instance of the {\tt URLSchemeResolver} class
-to the {\tt http:} scheme.
-
-\fussy
-
- Any scheme-handler
-can be used for any scheme-name, as long as it implements the handler protocol
-compatibly.
-
-
-The \emph{scheme scheme} can also be queried,
-so the expression {\bf scheme:http} returns the currently installed http handler, and 
-{\bf scheme:scheme} returns the scheme scheme itself, which will list the currently
-installed schemes.  Listing~\ref{scheme-scheme} shows the schemes installed by
-default in the scripting environment {\tt stsh}.
-
-\vspace{-0.5em}
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=scheme-scheme,caption=List of schemes via scheme:scheme.]
-> scheme:scheme 
-scheme-resolver with the following schemes: (defaults,  env, class,
-    file, ftp,  http, https   default, var, sel,    scheme,    bundle,  mainbundle   )
+\begin{lstlisting}[style=numbers,label=validpis,caption=Valid Polymorphic Identifiers]
+person
+name
+var:person/name
+var:person/{attribute}
+file://tmp/button.png
+http://www.example.com/button.png
+file:{env:HOME}/rfcs/{rfcName} 
 \end{lstlisting}
 \end{figure}
-\vspace{-0.5em}
 
-To illustrate the concepts, we will now present a few built-in scheme-handlers, ways to construct new
-scheme-handlers out of existing scheme-handlers and apply these scheme-handlers to common
-problems.
+URI syntax is very general, for example XPath~\cite{path} query language for XML is 
+expressible as URIs.
 
-\subsection{Primitive Schemes}
-\label{primitiveSchemes}
+\subsection{References}
 
-Primitive schemes are endpoints, they directly
-mediate access to a specific kind of resource, often using a separate
-library such as {\tt libwww} or {\tt libcurl}.  Primitive schemes
-subsume both what is normally considered variable access and 
-what is usually considered I/O, network and filesystem access.
+References are the expression of Strachey's Load Update Pair within the Polymorphic
+Identifier system, they mediate access to a specific L-Value.  Similar to the {\tt ValueAccessor}
+class presented in Section~\ref{parametrized}, they hide variations in access mechanics from
+clients, but due to compiler support without negative impacts in usability or performance. 
+References can also be exposed to the user for generic indirect/parametrized access, with
+the potential for store-specific behavior.
+
+Although References can in theory be arbitrary, whatever is needed to access an L-Value,
+we have identified three common cases:   indexed references that are offsets to their
+context, for example for local or instance variables within an object, messaging references
+that send L-Value-specific messages, and finally keyed messages that send generic
+access messages along with a key specifying the L-Value in question.
+
+Listing~\ref{referenceclass} shows conceptually how the actual {\tt Reference} implementation
+that is used for most in-memory references 
+differs from the {\tt ValueAccessor} class shown if Listing~\ref{valueaccessor}, with the
+{\tt value} method combing the three modes of access:  first the integer offset, then messaging, and
+finally keyed access.  Which specific access method is chosen is determined at binding time,
+with cooperation from the scheme-handler the target object and the source of the reference.
 
 
-\subsubsection{External resources}
-\label{externalResources}
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=referenceclass,caption=Reference class extract]
+@interface Reference : MPWObject
+{
+  id target;
+  int offset;
+  NSString *attributeName;
+  SEL         getSelector,putSelector;
+}
+...
+@end
+@implementation Reference
+...
+-value
+{
+  if ( offset >= 0 ) {
+     return ((id*)target)[offset];
+  } else if ( getSelector ) {
+      return [target perform:getSelector];
+  } else {
+     return [target objectForKey:attributeName];
+  }
+}
+...
+\end{lstlisting}
+\end{figure}
 
-The list of default scheme-handlers in Listing~\ref{scheme-scheme} contains a few familiar URI schemes:
-{\tt http}, {\tt https}, {\tt ftp}, and {\tt file}.   These behave in the expected way:   referencing them in an expression will
-retrieve the bytes from the web-server, FTP-server or file, and placing them on the left hand side of
-an assignment statement will perform an HTTP or FTP PUT request or write to a file system. 
- 
-Listing~\ref{download-to-file} shows how an RFC can be downloaded directly from a web-site
-to a file, or how the web page could be updated given the right permissions, and demonstrates how integrating both filesystem access and the web as first class datatypes
-goes some way to closing the gap between application programming languages and so called
-scripting languages.
+The key to achieving good performance despite the extra indirection introduced
+by the References is that binding can be separated from evaluation and performed
+earlier, for example the first time an object of a specific class is referenced.  
+The effect is similar to JIT compilers for late-bound
+messaging inlining accessors, but without the overhead of compiling during
+code execution or security risks of adding allowing code to be added at run time.
+When the target object and its client agree, binding can occur completely at 
+compile time, compiling away any overhead.
+
+The generic interface to arbitrary L-Values that are References can also be 
+exposed to user programs to fill the need for parametrized references we
+discussed in Section~\ref{parametrized}.  Listing~\ref{referenceuse} shows
+example use of a reference that is the equivalent of Listing~\ref{valueaccessoruse}.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[style=numbers,label=referenceuse,caption=Using a first class reference]
+valueAccessor := ref:person/name.
+name := valueAccessor value.
+\end{lstlisting}
+\end{figure}
+
+References have generic behavior in addition to their basic 
+Load and Update (GET/PUT, value/setValue:) operations:   assignment operations
+are not handled by the language, but passed on to the references in questions
+so copy operations can be optimized.   Examples include streaming data from
+a web-resource to a file instead of loading it fully into memory first or performing
+a copy operation on a remote server without first downloading the contents
+and then uploading it again. References
+are also capable of listing their child references, making generic browsing and
+export to HTTP and file systems possible.
+
+In addition, references can exhibit additional behavior that is specific to a particular
+store.  For example, storing a reference to file in another file results in the creation
+of a symbolic link, and file references can retrieve and manipulate meta-data about
+the file in question.
+
+
+
+\subsection{Schemes and scheme-handlers}
+\label{schemes}
+
+Schemes in Polymorphic Identifiers serve almost the same role as schemes in URIs
+in general:  they visibly partition the identifier namespace and allow specific identifiers
+to be associated with specific scheme-handlers.  Scheme-handlers manage a specific
+store, examples include object instance variables, local variables, dictionaries, files
+and web resources.  In addition, composite scheme-handlers can be used to 
+create new stores by modifying access to an underlying store, by transforming 
+identifiers or data coming in and out of the store.  These mechanisms provide
+a rich toolset for abstracting from details of particular store and providing interoperable
+abstractions on storage.
+
+Unlike Uniform Resource Locators (URLs)~\cite{rfc1738}, URIs do not specify an access
+path to a specific location, but rather specify a name that can then be mapped to a location.
+Schemes in this context are also not protocol specifications and do not specify an actual store,
+even though they may appear to do so.  Instead, scheme names provide user-visible
+partitions of the name space that are mapped dynamically to specific scheme handlers
+via the special {\tt scheme:scheme} that contains scheme-handlers.
+
+The expression {\tt scheme:http := URLSchemeResolver new}
+binds the {\tt http:} scheme to an instance of the {\tt URLSchemeResolver} class. With this
+definition in place an identifier such as the previously introduced {\tt http://www.example.com/button.png} will actually be
+resolved by that URLSchemeResolver instance.  Although users can just as easily bind 
+the {\tt http} scheme to a different scheme-handler, possibly one using completely different
+storage or transport or one performing additional actions before sending an HTTP-request,
+we will use default scheme-bindings to refer to scheme-handlers for the remainder 
+to ease the exposition.
+
+Listing~\ref{download-to-file} shows how a web-resource can be downloaded to a file
+or updated from a string literal using plain assignment syntax.  
 
 \begin{figure}[htbp]
 \begin{lstlisting}[style=numbers,label=download-to-file,caption=Downloading an RFC to a file.]
@@ -888,76 +922,10 @@ http://datatracker.ietf.org/doc/rfc1738:='New RFC'.
 \end{lstlisting}
 \end{figure}
 
-In fact,  Objective-Smalltalk is used as a Unix scripting language using the {\tt stsh} command
-interpreter for interactive and batch use with only minor adaptations to this use-case such
-as semi-automatic parameter and return-value adaptation.
 
 
-The {\tt stcat} script in Listing~\ref{stcat} prints an arbitrary resource to Unix standard output, 
-similar to the way the Unix {\tt cat} command is used to display files\footnote{{\tt stcat} only 
-displays a single resource rather than concatenating several.}.
-The declaration of the {\tt stcat} script as a method in line 2 enables the infrastructure to 
-handle some interfacing tasks such as argument and return value conversion, as well
-as making it possible for the script to be loaded and used as an actual 
+\subsubsection{In-memory stores}
 
-The {\tt ref} type of the {\tt file} parameter means that this parameter will be bound to the
-reference that results from evaluating the Polymorphic Identifier passed as a command
-line parameter.    Line 3 simply retrieves the value of the reference and returns it as
-the return value of the method, which the scripting environment knows to print to {\tt stdout}.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=stcat,caption={\tt stcat} prints contents of any resource.]
-#!/usr/local/bin/stsh
-#-stcat:<ref>file
-file value.
-\end{lstlisting}
-\end{figure}
-
-
-The command  {\tt stcat http://datatracker.ietf.org/doc/rfc1738} shows \break \mbox{Request}
-For Comment 1738 (RFC) from the web site of the rfc-editor, whereas 
-the command {\tt stcat file:\~\//.bashrc} will display the user's bash startup script, assuming you are a user of the
-bash shell, and on a Unix system, {\tt stcat env:HOME} will print the path to 
-your home directory.
-\fussy
-
-With a current Unix shell each of these resource types would have used a different
-access syntax or command:   {\tt curl http://datatracker.ietf.org/doc/rfc1738} for the
-web resource, {\tt cat  \~\//.bashrc} for the file and {\tt echo \$HOME} for the environment
-variable, as would using Objective-Smalltalk without Polymorphic Identifiers .
-
-The {\tt scurl} command in Listing~\ref{scurl} is slightly more complicated than {\tt stcat} because
-it needs to manipulate the identifier.  The {\tt scurl} command
-is the {\tt stsh} variant of the {\tt curl -O} command for downloading files from the web, giving 
-{\tt scurl} the argument {\tt http://http://datatracker.ietf.org/doc/rfc1738} will download the specified web resource
-to the current directory as the file {\tt rfc1738}.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=scurl,caption={\tt scurl} downloads files.]
-#!/usr/local/bin/stsh
-#-<void>scurl:<ref>urlref
-fileName:= urlref identifier lastPathComponent.
-file:{fileName} := urlref value.
-\end{lstlisting}
-\end{figure}
-
-
-The declaration in line 2 is similar to our previous example except for declaring that there
-is no return value.   We retrieve the last component of the {\tt urlref} Polymorphic Identifier into the {\tt fileName}
-variable and finally retrieve the value of  {\tt urlref} and store it into the file that
-the {\tt fileName} variable indicates.
-
-The {\tt scurl} command does not only work on web references, but just as well
-on files, so typing the command {\tt scurl \~\//.bashrc} will copy your bash resource from your home directory
-to the local directory.
-
-Access to metadata for a resource, such as availability, size or descendant nodes
-is accomplished via the reference, which can support both common and scheme-specific
-messages.
-
-\subsubsection{In-memory resources}
 \label{inmemory}
 
 Although adding file and web references as integrated, first class objects to a programming
@@ -1007,402 +975,27 @@ A further scheme-handler that is not pre-loaded but available for defining
 custom schemes is the {\tt SiteMap}.  A {\tt SiteMap} stores arbitrary objects
 in memory in a tree structure that acts a bit like a memory filesystem.
 
-\subsection{Composite Schemes}
-\label{compositeSchemes}
-Composite schemes  create a new scheme by combining one or 
-more existing schemes. 
 
- Schemes used in programming 
-are frequently composites of various primitive schemes, for example
-the {\tt http} scheme will typically not actually be the raw http access
-scheme provider, but a composite like the one in Figure~\ref{fig:http-cached} combining
-raw http access with two caches, a file cache and an in-memory cache.
 
+\begin{itemize}
+\item var-scheme, ivar, local-var, default-scheme
+\item external: file, http, (smb, FTP, ...)
+\item composites:  sequential, cache, relative, 
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.4,page=1]{cached-http.pdf}
-\caption{Typical http scheme-handler with caching, composed from simpler schemes}
-\label{fig:http-cached}
+\end{itemize}
 
-\end{figure}
 
+Similar to the {\tt Resourcer} class like the one shown in Listing~\ref{resourcer}.
 
-\subsubsection{Filter schemes}
-\label{filterschemes}
-Filter schemes take a single source scheme and apply processing to either
-the identifiers passed to the source,  the data read from or written to the source, or both.
-
-An example of a filter that just modifiers the identifier is the \emph{relative}
-scheme, which as the name implies interprets identifiers relative to a base
-identifier in its source scheme, for example a specific directory in the
-filesystem.  
-
-The caching http resolver in Figure~\ref{fig:http-cached} uses an instance
-of a relative scheme to store its disk cache in a specific directory, rather
-than at the root of the filesystem.  Another common use for relative schemes
-is to provide an abstract name space that is then mapped to one
-or more  concrete implementations, Listing~\ref{rfc-scheme} shows
-an {\tt rfc:} scheme that is implemented by looking at the {\tt datatracker.ietf.org}
-website.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=rfc-scheme,caption=Defining a custom rfc: scheme.]
-scheme:rfc:=RelativeScheme schemeWithBase: ref:http://datatracker.ietf.org/doc
-\end{lstlisting}
-\end{figure}
-
-Once the {\tt rfc} scheme from Listing~\ref{rfc-scheme} is defined, client code can 
-retrieve a specific RFC using the identifier {\tt  rfc:rfc2396}.  Having abstracted
-from the actual store for client code, we can now easily change it, for example
-substituting a different server, a directory in a local filesystem or even an 
-in-memory store.  Relative schemes are common enough that they can be
-created by sending the message {\tt asScheme} to a reference: {\tt ref:http://datatracker.ietf.org/doc asScheme}.
-
-
-%\begin{figure}[htbp]
-%\begin{lstlisting}[style=numbers,label=rfc-scheme-convenience,caption=Defining a custom rfc: scheme.]
-%scheme:rfc:=ref:http://datatracker.ietf.org/doc/ asScheme.
-%\end{lstlisting}
-%\end{figure}
-
-%Since relative schemes are very common and usually based on a reference, the
-%{\tt asScheme} convenience operation on references creates a relative scheme, as shown
-%for the {\tt rfc:} scheme in Listing~\ref{rfc-scheme-convenience}.
-
-A filter scheme that modifies data while leaving the URI as-is is the \emph{MIME-Type mapper}.
-The mapper is parametrized with routines that create objects from data with specific
-mime-types.  
-
-
-\subsubsection{N-ary Schemes}
-
-Composite schemes can have two or more source schemes and scheme-specific logic
-to determine which of the source schemes to use for reading and writing data.
-
-A very simple \emph{binary scheme} just performs sequential lookup:  try to
-retrieve the value from the first source scheme, and if that fails try the second.
-The {\tt var:} scheme from Section~\ref{inmemory}  replicates variable/identifier
-lookup rules using a simple combination of sequential lookup schemes parametrized
-with the underlying storage schemes.
-
-By adding a write-back capability to the sequential lookup scheme, where an element
-retrieved from the second source gets written to the first source, we get a simple \emph{cache} scheme.  
-The caching http scheme we saw earlier in Figure~\ref{fig:http-cached} uses
-separate cache scheme-handlers, one with an in-memory cache (the {\tt SiteMap} from Section~\ref{inmemory})
-and the other with a file cache that consists of a relative scheme (Section~\ref{filterschemes}) 
-designating a specific directory in the filesystem.
-
-The code to implement this composed, caching http scheme is similar 
-to the diagram depicted in Figure~\ref{fig:http-cached}.  It is shown in Listing~\ref{http-composed-listing}:  
-starting with the URL resolver (1) and the {\tt /tmp} directory for our cache (2), we construct
-a file cache (3) an in-memory cache (4) and then hook up all these pieces together
-in sequence using the {\tt ->} connector (5).
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=http-composed-listing,caption=Code for caching http stack.]
-rawhttp := URLSchemeResolver scheme.
-tempdir := ref:file:/tmp/ asScheme.
-filecache := CacheScheme cacheWithScheme: tempdir.
-memcache := CacheScheme memoryCache.
-scheme:http := rawhttp -> filecache -> memcache.
-\end{lstlisting}
-\end{figure}
-
-If we want our {\tt http:} scheme to retrieve domain objects, we instantiate a MIME-mapper
-({\tt mapper := MIMEMapper defaultMapper}) and add it to the end of the chain of schemes: 
-{\tt rawhttp->filecache->memcache->mapper}.  Alternatively, we can choose to cache the
-domain objects instead using the following simple code sequence: {\tt rawhttp -> filecache -> mapper -> memcache}.
-Both variants are shown in Figure~\ref{http-cached-converted}.
-
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.5,page=1]{mapped-and-cached-http.pdf}
-\caption{Two ways of adding conversion to the caching http-stack}
-\label{http-cached-converted}
-\end{figure}
-
-
-With the MIME-mapper in place in the revamped http-scheme, we can now 
-write the flickr.com example from Listing~\ref{nsurl-flickr-draw} inline as {\tt context drawImage:http:///{\ldots}jpg},
-but using a user-defined {\tt flickr:} scheme, we can be even more concise:  
-{\tt context drawImage: flickr:3559417932\_7208103ed8\_m.jpg}
-
-
-\section{First-class references}
-\label{references}
-
-As we saw in Section~\ref{identifiers}, references are necessary for various programming tasks,
-and many different mechanism exist to create them.   With the reification of the identifier lookup
-process, we automatically get a reference object for every kind of resource access, but this
-reference is hidden inside the Polymorphic Identifier system, because dereferencing the
-reference is automatic.
-
-The {\tt ref:} special scheme prevents evaluation of references and thus allows access
-to the references themselves.  Listing~\ref{ref-binding} shows how basic access to
-the value of a variable works via the reference.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=ref-binding,caption=Retrieve and store value via its reference.]
-ref:theAnswer value.     //  returns 42
-ref:theAnswer setValue:42.  
-\end{lstlisting}
-\end{figure}
-
-Having exposed references as first class objects, we can now use them for parametrized 
-access.  The GUI widget example from Section~\ref{identifiers} now
-also takes just one argument in the widget (Figure~\ref{ui-widget-reference}) just like
-the ValueHolder version (Figure~\ref{ui-widget-valueholder}).
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[scale=0.51,page=1]{ui-widget-reference.pdf}
-\caption{Widget using first-class reference}
-\label{ui-widget-reference}
-
-\end{figure}
-
-However, we can have this convenience without the drawbacks of a parallel class
-hierarchy, as we reuse the basic identifier lookup mechanism, and without any
-inconvenience in creation, because we can just use the same syntax as we would
-with a direct reference, only having to prefix a {\tt ref:} at the beginning:  {\tt ref:var:deepThought/theAnswer}.
-
-
-\subsection{Common behavior for references}
-\label{common-reference-behavior}
-In addition to retrieving and storing values, references are also used to query and manipulate
-metadata.  For example {\tt ref:env:bozo isBound} returns {\tt true} if the environment
-variable {\tt bozo} exists and {\tt false} if it does not.
-
-References also support a generic API for tree-based structures.   These APIs are used
-by the runtime to support path-based access, and also enable arbitrary
-schemes to be exported as a user-level filesystem using FUSE~\cite{fuse} or as a web-server using libmicrohttp~\cite{libmicrohttp}.
-Listing~\ref{fileserver} shows a server that exports a directory via http.
-
-\vspace{-1.0em}
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=fileserver,caption=Exporting a directory via http.]
-#!/usr/local/bin/stsh
-#-<void>fileserver:<ref>dir
-context loadFramework:'MPWSideWeb'
-server := dir -> (Cache memoryCache)  ->  (MPWSchemeHttpServer serverOnPort:8081)
-server start:nil.
-\end{lstlisting}
-\end{figure}
-
-\vspace{-2.0em}
-
-
-\subsection{Scheme-specific behavior for references}
-
-References are scheme-specific and can include additional API specific to that type of scheme.
-For example, file bindings are analogues of the Java {\bf File} object and can deliver
-meta-data about and perform operations such as querying whether a file is a directory, with
-{\tt ref:file:/tmp/ isDirectory}.
-
-
-Having the concept of references also regularizes some special-purpose APIs.  For example,
-we can copy a file using the code {\tt file:a := file:b}.  On the other hand, storing a reference 
-to a file in another file with the code {\tt file:a := ref:file:b} creates a symbolic link.\footnote{A hard link
-would be a reference to the inode, which isn't exposed by the kernel}.
-
-References for remote resources include methods for initiating a transfer, getting headers and 
-error-checking.
-
-\subsection{Messaging mediated by references}
-
-References also mediate message sends.   Messages are not sent directly to their objects, but via a
-\emph{Higher Order Message} (HOM)~\cite{HOM}, in this case {\tt send}, to the receiver.    HOMs
-are messages that take other messages as their argument, so the argument of the {\tt send} HOM is the
-message that is to be sent to the value of the reference.  
-
-  Line 1 of Listing~\ref{message-via-ref} shows
-what happens when sending the {\tt setTheAnswer:} message to the {\tt deepThought} object with
-the argument {\tt 42}.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=message-via-ref,caption=Message sending via reference and with syntactic sugar]
-ref:deepThought send setTheAnswer:ref:newAnswer
-deepThought setTheAnswer:newAnswer
-\end{lstlisting}
-\end{figure}
-
-As with obtaining values from references, line 1 is consistent but would be too inconvenient for day to day use,
-so line 2 shows the syntactic sugar version that is converted by the compiler to what's in line 1.  The {\tt send}
-HOM implements the simple synchronous message send that is default Smalltalk semantics.   Arguments
-are passed as references to the HOM, which can then decide whether to evaluate them.  The default {\tt send}
-HOM evaluates all references to implement \emph{pass by value} semantics.
-
-References can and do implement other message passing semantics, such as asynchronous sends, future
-sends or remote message sending.  As such, they take over the role of \emph{Proxies}~\cite{VanCutsemMiller} for mediating non-default
-message sending semantics.  
-
-
-HOM is also used to construct URL arguments, as shown in Listing~\ref{url-args}.  The {\tt withArgs:}
-HOM takes its message argument, in this case {\tt doi:'10.1.1.41.7628'} and converts into URL arguments,
-in this case {\tt ?doi=10.1.1.41.7628}.
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=url-args,caption=URL arguments via reference and higher order message.]
-  viewCiteSeer:=ref:http://citeseerx.ist.psu.edu/viewdoc/summary.
-  (viewCiteSeer withArgs doi:'10.1.1.41.7628') value
-\end{lstlisting}
-\end{figure}
-
-
-\subsection{Assignment via references}
-
-Assignment is one of the few special operations in Smalltalk, like identifier de-reference it cannot be overridden.
-It is special because it needs different evaluation rules for identifiers on the left hand side of the assignment:
-whereas identifier-evaluation usually yields a value, it needs to yield a reference on the left hand side, so
-a new value can be stored in the slot referenced.
-
-With first-class references, evaluation is always via the reference, so assignment is just a plain, though unsugared,
-message send that has references as both its receiver and argument.  The references then interact to resolve
-the assignment, and can implement special behavior such as creating a symbolic link for a file-references assigned
-to a file.
-
-With assignment being a complex operation, we must now deal with the possibility of failure.  Assignments 
-return a result that indicates status.  This status can also report progress for assignments that are
-non-atomic, such as a file-copy or web-download.
-
-
-
-\subsection{Kinds of references}
-\label{refkinds}
-In theory, every scheme can be accompanied by a specific kind of reference.  In practice, we have 
-seen most references fall in one of three different categories:
-
-\begin{enumerate}
-\item Indexed references, where the reference is an offset into some sort of context, for
-	example a stack frame or object.
-\item Messaging references, where the reference corresponds to a set of messages to
-	access the value.
-\item Generic references, where the original identifier is preserved and/or converted to
-	a string that is used as a parameter to a third party API, for example file names,
-	web URLs or environment variable names.
-\end{enumerate}
-
-Another distinction we've seen is that some references are context-sensitive, while some
-appear to be absolute references not requiring context.  The evaluation mechanism always
-provides a context, which is ignored by some references.  
-
-
-\section{Parametrized identifiers}
-\label{parametrized}
-
-One of the problems we repeatedly encountered in Section~\ref{identifiers} was 
-that of specialized and parametrized access, which has been partly solved with
-relative schemes and first class references.  Another common use case involves
-mixing static and dynamic parts in a single identifier, which has to resolved by
-using string processing.
-
-Parametrized identifiers are identifiers that have parts that are evaluated
-at runtime.  Curly brackets \{\} denote a section of the path that should be evaluated and
-the return value used as part of the access path.
-
-The example from Listing~\ref{rfcs-directory}, taking four lines of code to retrieve a specific RFC from a 
-the {\tt rfcs} directory in the user's home directory can be expressed as the simple expression
-{\tt file:\{env:HOME\}/rfcs/\{rfcName\}} using parametrized polymorphic identifiers.  It is almost
-as concise as the Unix shell equivalent: {\tt \$HOME/rfcs/\$rfcName}, and can itself be packaged
-in a file-based {\tt rfc:} scheme. 
-
-This {\tt rfc:} scheme for a local directory can easily be extended with a sequential lookup scheme
-and the {\tt rfc:} scheme from Section~\ref{filterschemes} to provide a multi-level lookup mechanism
-for RFCs like the one described in 
-
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
-
-
-\section{Implementation Aspects}
-\label{implementation}
-
-As discussed earlier \emph{Polymorphic Identifiers} have been implemented as part of Objective-Smalltalk,
-a Smalltalk dialect built on top of the Objective-C\cite{objc-evol}\cite{objc-apple} runtime, 
-in a way that is similar to FScript\cite{fscript} and MacRuby~\cite{macruby} in that Objective-Smalltalk classes,
-objects and messages are essentially indistinguishable from their Objective-C counterparts.
-
-Adding Polymorphic Identifiers to Objective-Smalltalk meant modifying the parser to allow URIs as identifiers,
-resolving some conflicts along the way,
-and allowing scheme-handlers to emit code for reference resolution and data access, which often
-delegates this to run-time.
-
-%Scheme-handlers are often simple enough that we can include an almost complete scheme-handler below.
-
-%\subsection{A simple example scheme}
-
-Listings~\ref{get-env} and \ref{setvalue-env} show the implementation of a simple scheme,
-the env-scheme that provides access to Unix environment variables.  This scheme is
-one that uses generic references (see Section~\ref{refkinds}), so the scheme is used
-not only for generating references, but the references also call back into the scheme
-to resolve themselves.
-
-Listing~\ref{get-env} 
-shows the {\bf bindingForName:inContext:} method that is the main access point for
-converting from an identifier to a binding.  In this case, a generic binding object is returned
-that simply stores the name of the identifier and lets the scheme that created it resolve
-access via the {\bf valueForBinding:} and {\bf setValue:forBinding:} methods.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=get-env,caption=Basic lookup in env: scheme.]
--bindingForName:aName inContext:aContext
-{
-  return [GenericBinding bindingWithName:aName scheme:self];
-}
-
--valueForBinding:aBinding
-{
-  const char *val=getenv([[aBinding name] UTF8String]);
-  if ( val ) {
-    return [NSString stringWithUTF8String:val];
-  } else {
-    return nil;
-  }
-}
-\end{lstlisting}
-\end{figure}
-
-In this case, the name of the identifier is simply passed to the POSIX {\bf getenv()} function.
-Setting the value is handled in an analog fashion using the {\bf setenv()} function.
-
-
-\begin{figure}[htbp]
-\begin{lstlisting}[style=numbers,label=setvalue-env,caption=Set and check value in env: scheme.]
--(void)setValue:val forBinding:binding
-{
-  val=[newValue stringValue];
-  if ( val  ) {
-    setenv([[binding name] UTF8String], [value UTF8String],1);
-  } else {
-    unsetenv([[binding name] UTF8String]);
-  }
-}
--(BOOL)isBoundBinding:aBinding {
-  return  getenv([[aBinding name] UTF8String]) != NULL;
-}
-\end{lstlisting}
-\end{figure}
-
-
-%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=%
 
 \section{Evaluation}
 \label{evaluation}
 
-While Polymorphic Identifiers are still very much in an experimental stage, our
-results so far are very encouraging.  What started out as just a hunch, that making
-identifiers pluggable rather than relying on just messaging or a level of indirection
-via strings might prove interesting, has been more than confirmed, and has proven
-very productive in a number of projects.
+Hello before table
 
-While some effects were anticipated, others, such as the ability to solve the
-``assignment problem'' or the discovery of a composition mechanism for
-scheme-handlers proved serendipitous.  
+\csvautotabular{kvcvar.csv}
 
+Hello after table
 
 
 \subsection{Applications}
